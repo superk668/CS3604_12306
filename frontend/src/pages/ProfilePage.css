@@ -1,0 +1,598 @@
+/* 个人中心页面样式 */
+.profile-page {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+  font-family: 'Microsoft YaHei', Arial, sans-serif;
+}
+
+/* 头部样式 */
+.profile-header {
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 80px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo img {
+  width: 40px;
+  height: 40px;
+}
+
+.logo span {
+  font-size: 24px;
+  font-weight: bold;
+  color: #E2422B;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.back-home-btn {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #E2422B 0%, #d63918 100%);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.back-home-btn:hover {
+  background: linear-gradient(135deg, #d63918 0%, #c2310f 100%);
+  box-shadow: 0 2px 8px rgba(226, 66, 43, 0.3);
+  transform: translateY(-1px);
+}
+
+/* 主要内容区域 */
+.profile-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  gap: 20px;
+  min-height: calc(100vh - 120px);
+}
+
+/* 左侧边栏 */
+.profile-sidebar {
+  width: 280px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+}
+
+.user-info-card {
+  padding: 20px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #E2422B 0%, #d63918 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.user-details h3 {
+  margin: 0 0 5px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.user-details p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+/* 侧边栏导航 */
+.sidebar-nav {
+  padding: 0;
+}
+
+.nav-group {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.nav-group:last-child {
+  border-bottom: none;
+}
+
+.nav-group h4 {
+  margin: 0;
+  padding: 15px 20px 10px;
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+  background: #fafafa;
+}
+
+.nav-group ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-group li {
+  margin: 0;
+}
+
+.nav-group button {
+  width: 100%;
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+}
+
+.nav-group button:hover {
+  background: #f5f5f5;
+  color: #E2422B;
+}
+
+.nav-group button.active {
+  background: #fff5f4;
+  color: #E2422B;
+  border-left-color: #E2422B;
+  font-weight: 500;
+}
+
+/* 右侧内容区域 */
+.profile-content {
+  flex: 1;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  overflow: hidden;
+}
+
+.content-section {
+  height: 100%;
+}
+
+.section-header {
+  padding: 20px 30px;
+  border-bottom: 1px solid #f0f0f0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+
+.section-header h2 {
+  margin: 0 0 10px 0;
+  font-size: 20px;
+  color: #333;
+  font-weight: 500;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.separator {
+  color: #ccc;
+}
+
+.current {
+  color: #E2422B;
+  font-weight: 500;
+}
+
+/* 个人信息卡片 */
+.info-card {
+  margin: 30px;
+  padding: 25px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.info-card h3 {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  color: #333;
+  font-weight: 500;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #E2422B;
+  display: inline-block;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-item label {
+  width: 100px;
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.info-item span {
+  flex: 1;
+  font-size: 14px;
+  color: #333;
+}
+
+/* 乘车人管理 */
+.passengers-section {
+  padding: 30px;
+}
+
+.section-actions {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.add-passenger-btn {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #E2422B 0%, #d63918 100%);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-passenger-btn:hover {
+  background: linear-gradient(135deg, #d63918 0%, #c2310f 100%);
+  box-shadow: 0 2px 8px rgba(226, 66, 43, 0.3);
+  transform: translateY(-1px);
+}
+
+.passengers-list {
+  display: grid;
+  gap: 15px;
+}
+
+.passenger-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: #fff;
+  transition: all 0.3s ease;
+}
+
+.passenger-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #E2422B;
+}
+
+.passenger-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.passenger-info p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.passenger-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.edit-btn, .delete-btn {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.edit-btn {
+  color: #0066cc;
+  border-color: #0066cc;
+}
+
+.edit-btn:hover {
+  background: #0066cc;
+  color: #fff;
+}
+
+.delete-btn {
+  color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+.delete-btn:hover {
+  background: #ff4d4f;
+  color: #fff;
+}
+
+/* 订单管理 */
+.orders-section {
+  padding: 30px;
+}
+
+.order-filters {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.filter-select, .date-filter {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.filter-select:focus, .date-filter:focus {
+  outline: none;
+  border-color: #E2422B;
+  box-shadow: 0 0 0 2px rgba(226, 66, 43, 0.2);
+}
+
+.orders-list {
+  display: grid;
+  gap: 20px;
+}
+
+.order-card {
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.order-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #E2422B;
+}
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.order-number {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+}
+
+.order-status {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.order-status.paid {
+  background: #f6ffed;
+  color: #52c41a;
+  border: 1px solid #b7eb8f;
+}
+
+.order-status.cancelled {
+  background: #fff2f0;
+  color: #ff4d4f;
+  border: 1px solid #ffccc7;
+}
+
+.order-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+}
+
+.train-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #E2422B;
+  font-weight: bold;
+}
+
+.train-info p, .passenger-info p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.price-info .price {
+  font-size: 20px;
+  color: #E2422B;
+  font-weight: bold;
+  margin: 0;
+}
+
+.order-actions {
+  display: flex;
+  gap: 10px;
+  padding: 15px 20px;
+  background: #fafafa;
+  border-top: 1px solid #f0f0f0;
+}
+
+.detail-btn, .refund-btn {
+  padding: 6px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.detail-btn {
+  color: #0066cc;
+  border-color: #0066cc;
+}
+
+.detail-btn:hover {
+  background: #0066cc;
+  color: #fff;
+}
+
+.refund-btn {
+  color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+
+.refund-btn:hover {
+  background: #ff4d4f;
+  color: #fff;
+}
+
+/* 订单状态样式 */
+.order-status.paid {
+  background: #52c41a;
+  color: white;
+}
+
+.order-status.unpaid {
+  background: #faad14;
+  color: white;
+}
+
+.order-status.cancelled {
+  background: #ff4d4f;
+  color: white;
+}
+
+.order-status.refunded {
+  background: #722ed1;
+  color: white;
+}
+
+/* 空状态样式 */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .profile-main {
+    flex-direction: column;
+    padding: 15px;
+  }
+  
+  .profile-sidebar {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  .user-info-card {
+    padding: 15px;
+  }
+  
+  .avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+  
+  .section-header {
+    padding: 15px 20px;
+  }
+  
+  .info-card, .passengers-section, .orders-section {
+    margin: 20px;
+    padding: 20px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .order-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .order-filters {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .passenger-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .passenger-actions {
+    align-self: flex-end;
+  }
+}
