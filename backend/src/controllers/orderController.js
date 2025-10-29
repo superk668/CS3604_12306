@@ -1,5 +1,6 @@
 const { Order, OrderPassenger, Train, TrainSeat, User } = require('../models');
 const { generateOrderId } = require('../utils/orderUtils');
+const { Op } = require('sequelize');
 
 // 创建订单
 const createOrder = async (req, res) => {
@@ -357,11 +358,21 @@ const cancelOrder = async (req, res) => {
   
   try {
     const { orderId } = req.params;
+    
+    // 添加调试日志
+    console.log('取消订单请求:', {
+      orderId,
+      userId: req.user?.id,
+      userInfo: req.user
+    });
 
+    // 尝试通过数据库ID或订单号查找订单
     const order = await Order.findOne({
       where: {
-        orderId,
-        userId: req.user.id
+        [Op.or]: [
+          { id: orderId, userId: req.user.id },
+          { orderId: orderId, userId: req.user.id }
+        ]
       },
       include: [{
         model: OrderPassenger,
@@ -369,6 +380,13 @@ const cancelOrder = async (req, res) => {
       }],
       transaction
     });
+    
+    console.log('查找到的订单:', order ? {
+      id: order.id,
+      orderId: order.orderId,
+      userId: order.userId,
+      status: order.status
+    } : '未找到订单');
 
     if (!order) {
       await transaction.rollback();
@@ -378,35 +396,37 @@ const cancelOrder = async (req, res) => {
       });
     }
 
-    if (order.status !== 'unpaid') {
+    if (order.status !== 'unpaid' && order.status !== 'paid') {
       await transaction.rollback();
       return res.status(400).json({
         success: false,
-        message: '只能取消待支付的订单'
+        message: '只能取消待支付或已支付的订单'
       });
     }
 
     // 释放座位
     const seatCounts = {};
-    order.passengers.forEach(passenger => {
-      const key = `${passenger.seatType}`;
-      seatCounts[key] = (seatCounts[key] || 0) + 1;
-    });
-
-    for (const [seatType, count] of Object.entries(seatCounts)) {
-      const trainSeat = await TrainSeat.findOne({
-        where: {
-          trainNumber: order.trainNumber,
-          date: order.departureDate,
-          seatType
-        },
-        transaction
+    if (order.passengers && order.passengers.length > 0) {
+      order.passengers.forEach(passenger => {
+        const key = `${passenger.seatType}`;
+        seatCounts[key] = (seatCounts[key] || 0) + 1;
       });
 
-      if (trainSeat) {
-        await trainSeat.update({
-          availableSeats: trainSeat.availableSeats + count
-        }, { transaction });
+      for (const [seatType, count] of Object.entries(seatCounts)) {
+        const trainSeat = await TrainSeat.findOne({
+          where: {
+            trainNumber: order.trainNumber,
+            date: order.departureDate,
+            seatType
+          },
+          transaction
+        });
+
+        if (trainSeat) {
+          await trainSeat.update({
+            availableSeats: trainSeat.availableSeats + count
+          }, { transaction });
+        }
       }
     }
 

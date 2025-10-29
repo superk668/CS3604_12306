@@ -35,6 +35,19 @@ const ProfilePage: React.FC = () => {
   const [editingPassenger, setEditingPassenger] = useState<Passenger | null>(null);
   const [orderFilter, setOrderFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
+  
+  // 乘客数据 - 必须在所有条件渲染之前声明
+  const [passengers, setPassengers] = useState<Passenger[]>([]);
+  
+  // 订单数据 - 必须在所有条件渲染之前声明
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [orderPagination, setOrderPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
 
   // 检查登录状态
   useEffect(() => {
@@ -42,6 +55,46 @@ const ProfilePage: React.FC = () => {
       navigate('/login');
     }
   }, [isLoading, isLoggedIn, navigate]);
+
+  // 获取乘车人数据 - 必须在条件渲染之前声明
+  useEffect(() => {
+    const fetchPassengers = async () => {
+      try {
+        const { getPassengers } = await import('../services/passengerService');
+        const passengerList = await getPassengers();
+        setPassengers(passengerList);
+      } catch (error) {
+        console.error('获取乘车人信息失败:', error);
+        // 如果获取失败，使用用户基本信息作为默认乘车人
+        if (user) {
+          setPassengers([
+            {
+              id: '1',
+              name: user.realName,
+              idCard: user.idNumber,
+              phone: user.phoneNumber,
+              passengerType: '成人'
+            }
+          ]);
+        }
+      }
+    };
+
+    if (user) {
+      fetchPassengers();
+    }
+  }, [user]);
+
+  // 监听订单筛选变化 - 必须在条件渲染之前声明
+  useEffect(() => {
+    if (activeSection === 'orders') {
+      // 延迟调用fetchOrders，确保函数已定义
+      const timer = setTimeout(() => {
+        fetchOrders(1, orderFilter);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [orderFilter, activeSection]);
 
   // 如果正在加载，显示加载状态
   if (isLoading) {
@@ -56,46 +109,6 @@ const ProfilePage: React.FC = () => {
   if (!isLoggedIn || !user) {
     return null;
   }
-
-  // 乘客数据
-  const [passengers, setPassengers] = useState<Passenger[]>([]);
-
-  // 获取乘车人数据
-  useEffect(() => {
-    const fetchPassengers = async () => {
-      try {
-        const { getPassengers } = await import('../services/passengerService');
-        const passengerList = await getPassengers();
-        setPassengers(passengerList);
-      } catch (error) {
-        console.error('获取乘车人信息失败:', error);
-        // 如果获取失败，使用用户基本信息作为默认乘车人
-        setPassengers([
-          {
-            id: '1',
-            name: user.realName,
-            idCard: user.idNumber,
-            phone: user.phoneNumber,
-            passengerType: '成人'
-          }
-        ]);
-      }
-    };
-
-    if (user) {
-      fetchPassengers();
-    }
-  }, [user]);
-
-  // 订单数据 - 改为从API获取
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
-  const [orderPagination, setOrderPagination] = useState({
-    page: 1,
-    limit: 10,
-    total: 0,
-    totalPages: 0
-  });
 
   const handleBackToHome = () => {
     navigate('/');
@@ -156,7 +169,7 @@ const ProfilePage: React.FC = () => {
       console.error('获取订单错误:', error);
       // 如果新的服务失败，回退到原来的方式
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
         
         const params = new URLSearchParams({
           page: page.toString(),
@@ -213,13 +226,6 @@ const ProfilePage: React.FC = () => {
       setIsLoadingOrders(false);
     }
   };
-
-  // 监听订单筛选变化
-  useEffect(() => {
-    if (activeSection === 'orders') {
-      fetchOrders(1, orderFilter);
-    }
-  }, [orderFilter]);
 
   const handleAddPassenger = () => {
     setEditingPassenger(null);
@@ -296,9 +302,9 @@ const ProfilePage: React.FC = () => {
   const handleRefund = async (orderId: string) => {
     if (window.confirm('确定要申请退票吗？退票可能产生手续费。')) {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('authToken');
         const response = await fetch(`http://localhost:3000/api/v1/orders/${orderId}/cancel`, {
-          method: 'POST',
+          method: 'PUT', // 修改为PUT方法，与后端路由一致
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'

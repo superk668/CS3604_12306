@@ -56,7 +56,15 @@ const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
+  console.log('认证请求:', {
+    url: req.url,
+    method: req.method,
+    authHeader: authHeader ? 'Bearer ***' : '无',
+    hasToken: !!token
+  });
+
   if (!token) {
+    console.log('认证失败: 缺少token');
     return res.status(401).json({
       success: false,
       message: '访问被拒绝，需要提供Token'
@@ -65,9 +73,11 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = verifyToken(token);
+    console.log('Token验证成功:', { userId: decoded.id, username: decoded.username });
     req.user = decoded;
     next();
   } catch (error) {
+    console.log('Token验证失败:', error.message);
     return res.status(403).json({
       success: false,
       message: error.message
