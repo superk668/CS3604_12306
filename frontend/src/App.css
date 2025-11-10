@@ -85,9 +85,9 @@ body {
 }
 
 .nav-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
+  width: 100%;
+  margin: 0;
+  padding: 0 24px;
 }
 
 .nav-list {
@@ -119,10 +119,9 @@ body {
 /* 主体内容样式 */
 .main-content {
   flex: 1;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
   width: 100%;
+  margin: 0;
+  padding: 24px;
   box-sizing: border-box;
 }
 

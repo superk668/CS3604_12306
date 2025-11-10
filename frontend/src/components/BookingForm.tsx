@@ -9,15 +9,13 @@ interface BookingData {
   from: string
   to: string
   date: string
-  trainType: string
 }
 
 const BookingForm: React.FC<BookingFormProps> = ({ onSearch }) => {
   const [formData, setFormData] = useState<BookingData>({
     from: '',
     to: '',
-    date: '',
-    trainType: 'all'
+    date: ''
   })
 
   // 常用城市列表
@@ -26,16 +24,7 @@ const BookingForm: React.FC<BookingFormProps> = ({ onSearch }) => {
     '武汉', '成都', '西安', '重庆', '天津', '苏州'
   ]
 
-  // 车次类型选项
-  const trainTypes = [
-    { value: 'all', label: '全部' },
-    { value: 'G', label: 'G-高速' },
-    { value: 'D', label: 'D-动车' },
-    { value: 'C', label: 'C-城际' },
-    { value: 'Z', label: 'Z-直达' },
-    { value: 'T', label: 'T-特快' },
-    { value: 'K', label: 'K-快速' }
-  ]
+  // 已移除“车次类型”选择，仅保留基础查询字段
 
   // 获取今天的日期字符串
   const getTodayString = () => {
@@ -137,28 +126,9 @@ const BookingForm: React.FC<BookingFormProps> = ({ onSearch }) => {
           />
         </div>
 
-        {/* 车次类型 */}
-        <div className="train-type-group">
-          <label>车次类型</label>
-          <div className="train-type-options">
-            {trainTypes.map(type => (
-              <label key={type.value} className="train-type-option">
-                <input
-                  type="radio"
-                  name="trainType"
-                  value={type.value}
-                  checked={formData.trainType === type.value}
-                  onChange={(e) => handleInputChange('trainType', e.target.value)}
-                />
-                <span>{type.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
         {/* 搜索按钮 */}
         <button className="search-button" onClick={handleSearch}>
-          查询车票
+          查 询
         </button>
       </div>
 
@@ -168,28 +138,6 @@ const BookingForm: React.FC<BookingFormProps> = ({ onSearch }) => {
           <option key={city} value={city} />
         ))}
       </datalist>
-
-      {/* 快捷城市选择 */}
-      <div className="popular-cities">
-        <h4>热门城市</h4>
-        <div className="cities-grid">
-          {popularCities.map(city => (
-            <button
-              key={city}
-              className="city-button"
-              onClick={() => {
-                if (!formData.from) {
-                  handleInputChange('from', city)
-                } else if (!formData.to && city !== formData.from) {
-                  handleInputChange('to', city)
-                }
-              }}
-            >
-              {city}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

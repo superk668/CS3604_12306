@@ -51,8 +51,8 @@ const Carousel: React.FC<CarouselProps> = ({
 
   if (!items || items.length === 0) {
     return (
-      <div className="carousel-container">
-        <div className="carousel-placeholder">
+      <div className="hero-carousel">
+        <div className="hero-carousel-placeholder">
           <p>暂无轮播内容</p>
         </div>
       </div>
@@ -60,27 +60,27 @@ const Carousel: React.FC<CarouselProps> = ({
   }
 
   return (
-    <div className="carousel-container">
+    <div className="hero-carousel">
       {/* 轮播图片 */}
-      <div className="carousel-wrapper">
+      <div className="hero-carousel-wrapper">
         {items.map((item, index) => (
           <div
             key={item.id}
-            className={`carousel-slide ${index === currentIndex ? 'active' : ''}`}
+            className={`hero-carousel-slide ${index === currentIndex ? 'active' : ''}`}
           >
             {item.link ? (
               <a href={item.link} target="_blank" rel="noopener noreferrer">
                 {item.image ? (
                   <img src={item.image} alt={item.title} />
                 ) : (
-                  <div className="carousel-placeholder">{item.title}</div>
+                  <div className="hero-carousel-placeholder">{item.title}</div>
                 )}
               </a>
             ) : (
               item.image ? (
                 <img src={item.image} alt={item.title} />
               ) : (
-                <div className="carousel-placeholder">{item.title}</div>
+                <div className="hero-carousel-placeholder">{item.title}</div>
               )
             )}
           </div>
@@ -91,14 +91,14 @@ const Carousel: React.FC<CarouselProps> = ({
       {items.length > 1 && (
         <>
           <button 
-            className="carousel-arrow carousel-arrow-left"
+            className="hero-carousel-arrow hero-carousel-arrow-left"
             onClick={goToPrevious}
             aria-label="上一张"
           >
             &#8249;
           </button>
           <button 
-            className="carousel-arrow carousel-arrow-right"
+            className="hero-carousel-arrow hero-carousel-arrow-right"
             onClick={goToNext}
             aria-label="下一张"
           >
@@ -109,11 +109,11 @@ const Carousel: React.FC<CarouselProps> = ({
 
       {/* 指示器 */}
       {items.length > 1 && (
-        <div className="carousel-indicators">
+        <div className="hero-carousel-indicators">
           {items.map((item, index) => (
             <button
               key={item.id}
-              className={`indicator ${index === currentIndex ? 'active' : ''}`}
+              className={`hero-indicator ${index === currentIndex ? 'active' : ''}`}
               onClick={() => goToSlide(index)}
               aria-label={`切换到第${index + 1}张`}
             />

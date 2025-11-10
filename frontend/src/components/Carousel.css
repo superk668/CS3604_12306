@@ -1,20 +1,22 @@
-.carousel-container {
+.hero-carousel {
   position: relative;
-  width: 100%;
-  height: 300px;
-  background-color: #fff;
-  border-radius: 8px;
+  /* 依赖容器宽度，容器无内边距时等于视口宽度 */
+  width: 350%;
+  min-width: 320px;
+  height: calc(500px); /* 高度减少三分之一 */
+  background-color: transparent;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.carousel-wrapper {
+.hero-carousel-wrapper {
   position: relative;
   width: 100%;
+  min-width: 320px;
   height: 100%;
 }
 
-.carousel-slide {
+.hero-carousel-slide {
   position: absolute;
   top: 0;
   left: 0;
@@ -24,25 +26,28 @@
   transition: opacity 0.5s ease-in-out;
 }
 
-.carousel-slide.active {
+.hero-carousel-slide.active {
   opacity: 1;
 }
 
-.carousel-slide img {
+.hero-carousel-slide img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  /* 横向扩大两倍，并以中心为基准，避免偏移 */
+  transform: scaleX(2);
+  transform-origin: center center;
 }
 
-.carousel-slide a {
+.hero-carousel-slide a {
   display: block;
   width: 100%;
   height: 100%;
 }
 
 /* 箭头按钮 */
-.carousel-arrow {
+.hero-carousel-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -61,21 +66,21 @@
   z-index: 2;
 }
 
-.carousel-arrow:hover {
+.hero-carousel-arrow:hover {
   background-color: rgba(0, 0, 0, 0.7);
   transform: translateY(-50%) scale(1.1);
 }
 
-.carousel-arrow-left {
+.hero-carousel-arrow-left {
   left: 15px;
 }
 
-.carousel-arrow-right {
+.hero-carousel-arrow-right {
   right: 15px;
 }
 
 /* 指示器 */
-.carousel-indicators {
+.hero-carousel-indicators {
   position: absolute;
   bottom: 20px;
   left: 50%;
@@ -85,7 +90,7 @@
   z-index: 2;
 }
 
-.indicator {
+.hero-indicator {
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -95,18 +100,18 @@
   transition: all 0.3s ease;
 }
 
-.indicator:hover {
+.hero-indicator:hover {
   background-color: rgba(255, 255, 255, 0.8);
   transform: scale(1.2);
 }
 
-.indicator.active {
+.hero-indicator.active {
   background-color: #fff;
   transform: scale(1.2);
 }
 
 /* 占位符样式 */
-.carousel-placeholder {
+.hero-carousel-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -116,52 +121,52 @@
   color: #999;
 }
 
-.carousel-placeholder p {
+.hero-carousel-placeholder p {
   font-size: 16px;
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .carousel-container {
+  .hero-carousel {
     height: 200px;
   }
   
-  .carousel-arrow {
+  .hero-carousel-arrow {
     width: 35px;
     height: 35px;
     font-size: 18px;
   }
   
-  .carousel-arrow-left {
+  .hero-carousel-arrow-left {
     left: 10px;
   }
   
-  .carousel-arrow-right {
+  .hero-carousel-arrow-right {
     right: 10px;
   }
   
-  .carousel-indicators {
+  .hero-carousel-indicators {
     bottom: 15px;
   }
   
-  .indicator {
+  .hero-indicator {
     width: 10px;
     height: 10px;
   }
 }
 
 @media (max-width: 480px) {
-  .carousel-container {
+  .hero-carousel {
     height: 150px;
   }
   
-  .carousel-arrow {
+  .hero-carousel-arrow {
     width: 30px;
     height: 30px;
     font-size: 16px;
   }
   
-  .indicator {
+  .hero-indicator {
     width: 8px;
     height: 8px;
   }
