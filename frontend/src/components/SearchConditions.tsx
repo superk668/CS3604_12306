@@ -7,6 +7,8 @@ interface SearchConditionsProps {
   departDate: string;
   passengerType: 'adult' | 'student';
   trainType: 'all' | 'high_speed';
+  returnDate?: string;
+  tripType?: 'single' | 'round';
   onConditionsChange?: (conditions: SearchConditions) => void;
 }
 
@@ -14,8 +16,10 @@ interface SearchConditions {
   fromStation: string;
   toStation: string;
   departDate: string;
+  returnDate: string;
   passengerType: 'adult' | 'student';
   trainType: 'all' | 'high_speed';
+  tripType: 'single' | 'round';
 }
 
 const SearchConditions: React.FC<SearchConditionsProps> = ({
@@ -24,15 +28,31 @@ const SearchConditions: React.FC<SearchConditionsProps> = ({
   departDate,
   passengerType,
   trainType,
-  onConditionsChange
+  onConditionsChange,
+  returnDate = '',
+  tripType = 'single'
 }) => {
   const [conditions, setConditions] = useState<SearchConditions>({
     fromStation,
     toStation,
     departDate,
+    returnDate,
     passengerType,
-    trainType
+    trainType,
+    tripType
   });
+  const [errorMessage, setErrorMessage] = useState<string>('');
+
+  // 日期范围：今天至30天后
+  const getTodayString = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+  const getMaxDateString = () => {
+    const maxDate = new Date();
+    maxDate.setDate(maxDate.getDate() + 30);
+    return maxDate.toISOString().split('T')[0];
+  };
 
   const handleSwapStations = () => {
     const newConditions = {
@@ -41,63 +61,106 @@ const SearchConditions: React.FC<SearchConditionsProps> = ({
       toStation: conditions.fromStation
     };
     setConditions(newConditions);
-    onConditionsChange?.(newConditions);
   };
 
   const handleDateChange = (date: string) => {
     const newConditions = { ...conditions, departDate: date };
     setConditions(newConditions);
-    onConditionsChange?.(newConditions);
   };
 
   const handlePassengerTypeChange = (type: 'adult' | 'student') => {
     const newConditions = { ...conditions, passengerType: type };
     setConditions(newConditions);
-    onConditionsChange?.(newConditions);
   };
 
   const handleTrainTypeChange = (type: 'all' | 'high_speed') => {
     const newConditions = { ...conditions, trainType: type };
     setConditions(newConditions);
-    onConditionsChange?.(newConditions);
   };
 
-  // 生成日期选项（当前日期前后15天）
-  const generateDateOptions = () => {
-    const dates = [];
-    const today = new Date();
-    
-    for (let i = -7; i <= 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const weekDay = ['日', '一', '二', '三', '四', '五', '六'][date.getDay()];
-      
-      dates.push({
-        value: `${date.getFullYear()}-${month}-${day}`,
-        display: `${month}-${day}`,
-        weekDay: `周${weekDay}`,
-        isToday: i === 0
-      });
+  const handleTripTypeChange = (type: 'single' | 'round') => {
+    const newConditions = {
+      ...conditions,
+      tripType: type,
+      // 单程时清空返程日期
+      returnDate: type === 'single' ? '' : conditions.returnDate
+    };
+    setConditions(newConditions);
+  };
+
+  const handleReturnDateChange = (date: string) => {
+    const newConditions = { ...conditions, returnDate: date };
+    setConditions(newConditions);
+  };
+
+  const handleFromStationChange = (value: string) => {
+    const newConditions = { ...conditions, fromStation: value };
+    setConditions(newConditions);
+    if (errorMessage && value.trim() && newConditions.toStation.trim()) {
+      setErrorMessage('');
     }
-    
-    return dates;
   };
 
-  const dateOptions = generateDateOptions();
+  const handleToStationChange = (value: string) => {
+    const newConditions = { ...conditions, toStation: value };
+    setConditions(newConditions);
+    if (errorMessage && value.trim() && newConditions.fromStation.trim()) {
+      setErrorMessage('');
+    }
+  };
+
+  // 点击查询才触发提交
+  const handleSubmitQuery = () => {
+    if (!conditions.fromStation.trim() || !conditions.toStation.trim()) {
+      setErrorMessage('请填写出发地和目的地');
+      return;
+    }
+    setErrorMessage('');
+    onConditionsChange?.(conditions);
+  };
+
+  // 已移除日期导航与其相关的日期选项生成逻辑
 
   return (
     <div className="search-conditions">
       {/* 查询条件主区域 */}
       <div className="search-main">
+        {/* 左侧：单程/往返 */}
+        <div className="trip-type-column">
+          <label className="trip-type-item">
+            <input
+              type="radio"
+              name="tripType"
+              value="single"
+              checked={conditions.tripType === 'single'}
+              onChange={() => handleTripTypeChange('single')}
+            />
+            单程
+          </label>
+          <label className="trip-type-item">
+            <input
+              type="radio"
+              name="tripType"
+              value="round"
+              checked={conditions.tripType === 'round'}
+              onChange={() => handleTripTypeChange('round')}
+            />
+            往返
+          </label>
+        </div>
+
         <div className="station-selector">
           <div className="station-item">
             <label>出发地</label>
-            <div className="station-name">{conditions.fromStation}</div>
+            <input
+              type="text"
+              className={`station-input ${errorMessage && !conditions.fromStation.trim() ? 'invalid' : ''}`}
+              placeholder="请选择"
+              value={conditions.fromStation}
+              onChange={(e) => handleFromStationChange(e.target.value)}
+            />
           </div>
-          
+
           <button 
             className="swap-button"
             onClick={handleSwapStations}
@@ -105,16 +168,44 @@ const SearchConditions: React.FC<SearchConditionsProps> = ({
           >
             ⇄
           </button>
-          
+
           <div className="station-item">
             <label>目的地</label>
-            <div className="station-name">{conditions.toStation}</div>
+            <input
+              type="text"
+              className={`station-input ${errorMessage && !conditions.toStation.trim() ? 'invalid' : ''}`}
+              placeholder="请选择"
+              value={conditions.toStation}
+              onChange={(e) => handleToStationChange(e.target.value)}
+            />
           </div>
         </div>
 
         <div className="date-selector">
           <label>出发日期</label>
-          <div className="current-date">{conditions.departDate}</div>
+          <input
+            id="departure-date"
+            type="date"
+            className="date-input"
+            value={conditions.departDate}
+            min={getTodayString()}
+            max={getMaxDateString()}
+            onChange={(e) => handleDateChange(e.target.value)}
+          />
+        </div>
+
+        <div className={`date-selector ${conditions.tripType === 'single' ? 'disabled' : ''}`}>
+          <label>返程日期</label>
+          <input
+            id="return-date"
+            type="date"
+            className="date-input"
+            value={conditions.returnDate}
+            min={conditions.departDate || getTodayString()}
+            max={getMaxDateString()}
+            onChange={(e) => handleReturnDateChange(e.target.value)}
+            disabled={conditions.tripType === 'single'}
+          />
         </div>
 
         <div className="passenger-type-selector">
@@ -143,52 +234,17 @@ const SearchConditions: React.FC<SearchConditionsProps> = ({
           </div>
         </div>
 
-        <div className="train-type-selector">
-          <label>车次类型</label>
-          <div className="radio-group">
-            <label className="radio-item">
-              <input
-                type="radio"
-                name="trainType"
-                value="high_speed"
-                checked={conditions.trainType === 'high_speed'}
-                onChange={() => handleTrainTypeChange('high_speed')}
-              />
-              高铁/动车
-            </label>
-            <label className="radio-item">
-              <input
-                type="radio"
-                name="trainType"
-                value="all"
-                checked={conditions.trainType === 'all'}
-                onChange={() => handleTrainTypeChange('all')}
-              />
-              全部
-            </label>
-          </div>
-        </div>
-
-        <button className="search-button">
+        <button className="search-button" onClick={handleSubmitQuery}>
           查询
         </button>
+        {errorMessage && (
+          <div className="form-error" role="alert" aria-live="polite">
+            {errorMessage}
+          </div>
+        )}
       </div>
 
-      {/* 日期选择区域 */}
-      <div className="date-navigation">
-        <div className="date-list">
-          {dateOptions.map((date) => (
-            <button
-              key={date.value}
-              className={`date-item ${date.value === conditions.departDate ? 'active' : ''} ${date.isToday ? 'today' : ''}`}
-              onClick={() => handleDateChange(date.value)}
-            >
-              <div className="date-display">{date.display}</div>
-              <div className="week-day">{date.weekDay}</div>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* 已移除：查询栏下方的日期导航行 */}
     </div>
   );
 };

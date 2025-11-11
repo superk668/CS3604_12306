@@ -1,232 +1,259 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import './FilterConditions.css';
 
 interface FilterConditionsProps {
   onFiltersChange?: (filters: FilterState) => void;
+  currentDate: string;
+  fromStation?: string;
+  toStation?: string;
+  availableDepartureStations?: string[];
+  availableArrivalStations?: string[];
+  onDateSelect?: (date: string) => void;
 }
 
 interface FilterState {
-  departureTime: string[];
+  departureTime: string; // 单选：时间段
   trainTypes: string[];
   departureStations: string[];
   arrivalStations: string[];
   seatTypes: string[];
-  showDiscountTrains: boolean;
-  showPointsTrains: boolean;
-  showAllBookableTrains: boolean;
 }
 
-const FilterConditions: React.FC<FilterConditionsProps> = ({ onFiltersChange }) => {
+const FilterConditions: React.FC<FilterConditionsProps> = ({
+  onFiltersChange,
+  currentDate,
+  fromStation,
+  toStation,
+  availableDepartureStations = [],
+  availableArrivalStations = [],
+  onDateSelect
+}) => {
   const [filters, setFilters] = useState<FilterState>({
-    departureTime: [],
+    departureTime: '00:00-24:00',
     trainTypes: [],
     departureStations: [],
     arrivalStations: [],
-    seatTypes: [],
-    showDiscountTrains: false,
-    showPointsTrains: false,
-    showAllBookableTrains: true
+    seatTypes: []
   });
 
-  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
-    departureTime: true,
-    trainTypes: true,
-    departureStations: false,
-    arrivalStations: false,
-    seatTypes: false
-  });
-
-  // 发车时间选项
-  const departureTimeOptions = [
-    { value: '00:00-06:00', label: '00:00-06:00', count: 12 },
-    { value: '06:00-12:00', label: '06:00-12:00', count: 45 },
-    { value: '12:00-18:00', label: '12:00-18:00', count: 38 },
-    { value: '18:00-24:00', label: '18:00-24:00', count: 23 }
-  ];
-
-  // 车次类型选项
-  const trainTypeOptions = [
-    { value: 'all', label: '全部', count: 118 },
-    { value: 'GC', label: 'GC-高铁/城际', count: 67 },
-    { value: 'D', label: 'D-动车', count: 28 },
-    { value: 'Z', label: 'Z-直达', count: 5 },
-    { value: 'T', label: 'T-特快', count: 8 },
-    { value: 'K', label: 'K-快速', count: 7 },
-    { value: 'other', label: '其他', count: 3 },
-    { value: 'smart', label: '复兴号智能动车组', count: 15 }
-  ];
-
-  // 出发车站选项（示例数据）
-  const departureStationOptions = [
-    { value: 'all', label: '全部', count: 118 },
-    { value: 'shanghai', label: '上海', count: 45 },
-    { value: 'shanghai-hongqiao', label: '上海虹桥', count: 73 }
-  ];
-
-  // 到达车站选项（示例数据）
-  const arrivalStationOptions = [
-    { value: 'all', label: '全部', count: 118 },
-    { value: 'beijing', label: '北京', count: 28 },
-    { value: 'beijing-south', label: '北京南', count: 90 }
-  ];
-
-  // 席别选项
-  const seatTypeOptions = [
-    { value: 'all', label: '全部', count: 118 },
-    { value: 'business', label: '商务座', count: 45 },
-    { value: 'first_class_plus', label: '特等座', count: 32 },
-    { value: 'first_class_premium', label: '优选一等座', count: 28 },
-    { value: 'first_class', label: '一等座', count: 89 },
-    { value: 'second_class', label: '二等座', count: 118 },
-    { value: 'second_class_package', label: '二等包座', count: 15 },
-    { value: 'premium_sleeper', label: '高级软卧', count: 8 },
-    { value: 'soft_sleeper', label: '软卧/动卧', count: 12 },
-    { value: 'first_sleeper', label: '一等卧', count: 5 },
-    { value: 'hard_sleeper', label: '硬卧', count: 18 },
-    { value: 'second_sleeper', label: '二等卧', count: 7 },
-    { value: 'soft_seat', label: '软座', count: 3 },
-    { value: 'hard_seat', label: '硬座', count: 25 },
-    { value: 'no_seat', label: '无座', count: 45 },
-    { value: 'other_seat', label: '其他', count: 8 }
-  ];
-
-  const handleFilterChange = (category: keyof FilterState, value: string, checked: boolean) => {
-    const newFilters = { ...filters };
-    
-    if (Array.isArray(newFilters[category])) {
-      const currentArray = newFilters[category] as string[];
-      if (checked) {
-        if (!currentArray.includes(value)) {
-          (newFilters[category] as string[]) = [...currentArray, value];
-        }
-      } else {
-        (newFilters[category] as string[]) = currentArray.filter(item => item !== value);
-      }
+  const next14Days = useMemo(() => {
+    const days: { date: string; label: string; weekday: string }[] = [];
+    const start = new Date(currentDate);
+    const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(start);
+      d.setDate(start.getDate() + i);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const date = `${yyyy}-${mm}-${dd}`;
+      const label = `${mm}-${dd}`;
+      const weekday = weekdays[d.getDay()];
+      days.push({ date, label, weekday });
     }
-    
-    setFilters(newFilters);
-    onFiltersChange?.(newFilters);
+    return days;
+  }, [currentDate]);
+
+  const trainTypeOptions = [
+    { value: 'all', label: '全部' },
+    { value: 'GC', label: 'GC-高铁/城际' },
+    { value: 'D', label: 'D-动车' },
+    { value: 'Z', label: 'Z-直达' },
+    { value: 'T', label: 'T-特快' },
+    { value: 'K', label: 'K-快速' },
+    { value: 'other', label: '其他' },
+    { value: 'fuxing', label: '复兴号' },
+    { value: 'smart', label: '智能动车组' }
+  ];
+
+  const seatTypeOptions = [
+    { value: 'business', label: '商务座' },
+    { value: 'first_class_premium', label: '优选一等座' },
+    { value: 'first_class', label: '一等座' },
+    { value: 'second_class', label: '二等座' },
+    { value: 'first_sleeper', label: '一等卧' },
+    { value: 'second_sleeper', label: '二等卧' },
+    { value: 'soft_sleeper', label: '软卧' },
+    { value: 'hard_sleeper', label: '硬卧' },
+    { value: 'hard_seat', label: '硬座' }
+  ];
+
+  const timeRangeOptions = [
+    '00:00-24:00',
+    '00:00-06:00',
+    '06:00-12:00',
+    '12:00-18:00',
+    '18:00-24:00'
+  ];
+
+  const emitChange = (next: Partial<FilterState>) => {
+    const merged = { ...filters, ...next };
+    setFilters(merged);
+    onFiltersChange?.(merged);
   };
 
-  const handleBooleanFilterChange = (key: keyof FilterState, checked: boolean) => {
-    const newFilters = { ...filters, [key]: checked };
-    setFilters(newFilters);
-    onFiltersChange?.(newFilters);
-  };
-
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
-  const clearAllFilters = () => {
-    const clearedFilters: FilterState = {
-      departureTime: [],
-      trainTypes: [],
-      departureStations: [],
-      arrivalStations: [],
-      seatTypes: [],
-      showDiscountTrains: false,
-      showPointsTrains: false,
-      showAllBookableTrains: true
-    };
-    setFilters(clearedFilters);
-    onFiltersChange?.(clearedFilters);
-  };
-
-  const renderFilterSection = (
-    title: string,
-    sectionKey: string,
-    options: Array<{value: string, label: string, count: number}>,
-    filterKey: keyof FilterState
-  ) => (
-    <div className="filter-section">
-      <div className="filter-header" onClick={() => toggleSection(sectionKey)}>
-        <h3>{title}</h3>
-        <span className={`expand-icon ${expandedSections[sectionKey] ? 'expanded' : ''}`}>
-          ▼
-        </span>
+  return (
+    <div className="filter-conditions horizontal">
+      <div className="date-strip">
+        {next14Days.map(d => (
+          <button
+            key={d.date}
+            className={`date-item ${d.date === currentDate ? 'active' : ''}`}
+            onClick={() => onDateSelect?.(d.date)}
+          >
+            <div className="date-label">{d.label}</div>
+            <div className="date-weekday">{d.weekday}</div>
+          </button>
+        ))}
+        <div className="time-range">
+          <label className="time-label">发车时间:</label>
+          <select
+            className="time-select"
+            value={filters.departureTime}
+            onChange={(e) => emitChange({ departureTime: e.target.value })}
+          >
+            {timeRangeOptions.map(r => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+        </div>
       </div>
-      
-      {expandedSections[sectionKey] && (
-        <div className="filter-options">
-          {options.map(option => (
-            <label key={option.value} className="filter-option">
+
+      <div className="filter-line">
+        <span className="line-label">车次类型:</span>
+        <div className="line-options">
+          {trainTypeOptions.map(opt => (
+            <label key={opt.value} className="line-option">
               <input
                 type="checkbox"
-                checked={(filters[filterKey] as string[]).includes(option.value)}
-                onChange={(e) => handleFilterChange(filterKey, option.value, e.target.checked)}
+                checked={filters.trainTypes.includes(opt.value)}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  const cur = new Set(filters.trainTypes);
+                  if (checked) {
+                    cur.add(opt.value);
+                  } else {
+                    cur.delete(opt.value);
+                  }
+                  emitChange({ trainTypes: Array.from(cur) });
+                }}
               />
-              <span className="option-label">{option.label}</span>
-              <span className="option-count">({option.count})</span>
+              <span>{opt.label}</span>
             </label>
           ))}
         </div>
-      )}
-    </div>
-  );
-
-  return (
-    <div className="filter-conditions">
-      <div className="filter-header-main">
-        <h2>筛选条件</h2>
-        <button className="clear-filters" onClick={clearAllFilters}>
-          清空筛选
-        </button>
       </div>
 
-      <div className="filter-content">
-        {/* 发车时间筛选 */}
-        {renderFilterSection('发车时间', 'departureTime', departureTimeOptions, 'departureTime')}
-
-        {/* 车次类型筛选 */}
-        {renderFilterSection('车次类型', 'trainTypes', trainTypeOptions, 'trainTypes')}
-
-        {/* 出发车站筛选 */}
-        {renderFilterSection('出发车站', 'departureStations', departureStationOptions, 'departureStations')}
-
-        {/* 到达车站筛选 */}
-        {renderFilterSection('到达车站', 'arrivalStations', arrivalStationOptions, 'arrivalStations')}
-
-        {/* 席别筛选 */}
-        {renderFilterSection('车次席别', 'seatTypes', seatTypeOptions, 'seatTypes')}
-
-        {/* 显示选项 */}
-        <div className="filter-section">
-          <div className="filter-header">
-            <h3>显示选项</h3>
+      {!!fromStation && availableDepartureStations.length > 0 && (
+        <div className="filter-line">
+          <span className="line-label">出发车站:</span>
+          <div className="line-options">
+            <label className="line-option">
+              <input
+                type="checkbox"
+                checked={filters.departureStations.includes('all')}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  const cur = new Set(filters.departureStations);
+                  if (checked) {
+                    cur.add('all');
+                  } else {
+                    cur.delete('all');
+                  }
+                  emitChange({ departureStations: Array.from(cur) });
+                }}
+              />
+              <span>全部</span>
+            </label>
+            {availableDepartureStations.map(s => (
+              <label key={s} className="line-option">
+                <input
+                  type="checkbox"
+                  checked={filters.departureStations.includes(s)}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    const cur = new Set(filters.departureStations);
+                    if (checked) {
+                      cur.add(s);
+                    } else {
+                      cur.delete(s);
+                    }
+                    emitChange({ departureStations: Array.from(cur) });
+                  }}
+                />
+                <span>{s}</span>
+              </label>
+            ))}
           </div>
-          
-          <div className="filter-options">
-            <label className="filter-option">
+        </div>
+      )}
+
+      {!!toStation && availableArrivalStations.length > 0 && (
+        <div className="filter-line">
+          <span className="line-label">到达车站:</span>
+          <div className="line-options">
+            <label className="line-option">
               <input
                 type="checkbox"
-                checked={filters.showDiscountTrains}
-                onChange={(e) => handleBooleanFilterChange('showDiscountTrains', e.target.checked)}
+                checked={filters.arrivalStations.includes('all')}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  const cur = new Set(filters.arrivalStations);
+                  if (checked) {
+                    cur.add('all');
+                  } else {
+                    cur.delete('all');
+                  }
+                  emitChange({ arrivalStations: Array.from(cur) });
+                }}
               />
-              <span className="option-label">显示折扣车次</span>
+              <span>全部</span>
             </label>
-            
-            <label className="filter-option">
-              <input
-                type="checkbox"
-                checked={filters.showPointsTrains}
-                onChange={(e) => handleBooleanFilterChange('showPointsTrains', e.target.checked)}
-              />
-              <span className="option-label">显示积分兑换车次</span>
-            </label>
-            
-            <label className="filter-option">
-              <input
-                type="checkbox"
-                checked={filters.showAllBookableTrains}
-                onChange={(e) => handleBooleanFilterChange('showAllBookableTrains', e.target.checked)}
-              />
-              <span className="option-label">显示全部可预订车次</span>
-            </label>
+            {availableArrivalStations.map(s => (
+              <label key={s} className="line-option">
+                <input
+                  type="checkbox"
+                  checked={filters.arrivalStations.includes(s)}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    const cur = new Set(filters.arrivalStations);
+                    if (checked) {
+                      cur.add(s);
+                    } else {
+                      cur.delete(s);
+                    }
+                    emitChange({ arrivalStations: Array.from(cur) });
+                  }}
+                />
+                <span>{s}</span>
+              </label>
+            ))}
           </div>
+        </div>
+      )}
+
+      <div className="filter-line">
+        <span className="line-label">车次席别:</span>
+        <div className="line-options">
+          {seatTypeOptions.map(opt => (
+            <label key={opt.value} className="line-option">
+              <input
+                type="checkbox"
+                checked={filters.seatTypes.includes(opt.value)}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  const cur = new Set(filters.seatTypes);
+                  if (checked) {
+                    cur.add(opt.value);
+                  } else {
+                    cur.delete(opt.value);
+                  }
+                  emitChange({ seatTypes: Array.from(cur) });
+                }}
+              />
+              <span>{opt.label}</span>
+            </label>
+          ))}
         </div>
       </div>
     </div>

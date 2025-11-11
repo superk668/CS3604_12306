@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import AddPassengerModal from '../components/AddPassengerModal';
 import OrderConfirmModal from '../components/OrderConfirmModal';
 import OrderProcessing from '../components/OrderProcessing';
 import PaymentModal from '../components/PaymentModal';
+import Footer from '../components/Footer';
 import './OrderPage.css';
+import './HomePage.css';
 
 interface TrainInfo {
   trainNumber: string;
@@ -24,6 +27,8 @@ interface Passenger {
   idCard: string;
   phone: string;
   passengerType: '成人' | '儿童' | '学生';
+  idType?: string; // 可选证件类型，若未提供默认为居民身份证
+  isDefault?: boolean; // 默认乘车人（本人）标识
 }
 
 interface TicketInfo {
@@ -40,11 +45,13 @@ interface OrderData {
   totalPrice: number;
   passengers: Passenger[];
   ticketInfos: TicketInfo[];
+  selectedSeatCodes?: string[];
 }
 
 const OrderPage: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, isLoggedIn, logout } = useAuth();
   const [trainInfo, setTrainInfo] = useState<TrainInfo | null>(null);
   const [passengers, setPassengers] = useState<Passenger[]>([]);
   const [selectedPassengers, setSelectedPassengers] = useState<string[]>([]);
@@ -55,6 +62,28 @@ const OrderPage: React.FC = () => {
   const [isProcessingOpen, setIsProcessingOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const [seatInfo, setSeatInfo] = useState<Record<string, { price: number; availableSeats: number; totalSeats: number; isAvailable: boolean }>>({});
+
+  // 顶部导航交互：与首页保持一致
+  const handleProfileClick = () => {
+    if (isLoggedIn) {
+      navigate('/profile');
+    } else {
+      navigate('/login');
+    }
+  };
+  const handleLoginClick = () => {
+    navigate('/login');
+  };
+  const handleRegisterClick = () => {
+    navigate('/register');
+  };
+  const handleLogout = async () => {
+    if (window.confirm('确定要退出登录吗？')) {
+      await logout();
+      window.location.reload();
+    }
+  };
 
   useEffect(() => {
     // 从路由参数获取列车信息
@@ -77,16 +106,60 @@ const OrderPage: React.FC = () => {
       try {
         const { getPassengers } = await import('../services/passengerService');
         const passengerList = await getPassengers();
-        setPassengers(passengerList);
+
+        // 若后端乘车人列表未包含“本人”，则前端注入，保持与个人中心一致
+        let normalized = passengerList.slice();
+        if (user) {
+          const hasSelf = normalized.some(p => p.isDefault || (p.name === user.realName && p.idCard === user.idNumber));
+          if (!hasSelf) {
+            normalized.unshift({
+              id: 'self',
+              name: user.realName,
+              idCard: user.idNumber,
+              phone: user.phoneNumber,
+              passengerType: '成人',
+              idType: user.idType,
+              isDefault: true
+            });
+          }
+        }
+
+        setPassengers(normalized);
       } catch (error) {
         console.error('获取乘车人信息失败:', error);
-        // 如果获取失败，使用空数组
-        setPassengers([]);
+        // 如果获取失败，仍确保显示“本人”（若已登录）
+        if (user) {
+          setPassengers([
+            {
+              id: 'self',
+              name: user.realName,
+              idCard: user.idNumber,
+              phone: user.phoneNumber,
+              passengerType: '成人',
+              idType: user.idType,
+              isDefault: true
+            }
+          ]);
+        } else {
+          setPassengers([]);
+        }
+      }
+    };
+
+    // 获取座位实时信息（价格与余票）
+    const fetchSeatInfo = async () => {
+      try {
+        const { getTrainDetail } = await import('../services/trainService');
+        const detail = await getTrainDetail(trainData.trainNumber, trainData.date);
+        setSeatInfo(detail?.seatInfo || {});
+      } catch (error) {
+        console.error('获取座位信息失败:', error);
       }
     };
 
     fetchPassengers();
-  }, [location]);
+    fetchSeatInfo();
+  }, [location, user]);
 
   const handlePassengerSelect = (passengerId: string) => {
     const isSelected = selectedPassengers.includes(passengerId);
@@ -109,6 +182,26 @@ const OrderPage: React.FC = () => {
       }
     }
   };
+  
+  // 更新票种（成人/儿童/学生）
+  const handleTicketTypeChange = (passengerId: string, ticketType: TicketInfo['ticketType']) => {
+    setTicketInfos((prev: TicketInfo[]) => prev.map((info: TicketInfo) => 
+      info.passengerId === passengerId 
+        ? { ...info, ticketType }
+        : info
+    ));
+  };
+
+  // 将后端/个人中心可能的证件类型值映射为展示文案
+  const getIdTypeLabel = (idType?: string) => {
+    switch (idType) {
+      case '1': return '居民身份证';
+      case '2': return '外国人永久居留身份证';
+      case '3': return '港澳台居民居住证';
+      case '护照': return '护照';
+      default: return '居民身份证';
+    }
+  };
 
   const handleSeatTypeChange = (passengerId: string, seatType: string) => {
     setTicketInfos(prev => prev.map(info => 
@@ -126,6 +219,49 @@ const OrderPage: React.FC = () => {
       '无座': 553
     };
     return basePrices[seatType] || 553;
+  };
+
+  // 计算折扣（使用实时价格与基准价的比值）
+  const getSeatDiscountText = (seatType: string): string => {
+    const currentPrice = seatInfo?.[seatType]?.price;
+    const basePrice = getSeatPrice(seatType);
+    if (typeof currentPrice === 'number' && basePrice > 0) {
+      const ratio = (currentPrice / basePrice) * 10;
+      const discount = Math.max(1, Math.min(10, Number(ratio.toFixed(1))));
+      // 折扣为10折时不显示
+      if (discount >= 10) return '';
+      return `${discount}折`;
+    }
+    return '—折';
+  };
+
+  // 显示余票（实时）
+  const getSeatAvailabilityText = (seatType: string): string => {
+    const available = seatInfo?.[seatType]?.availableSeats;
+    if (typeof available === 'number') {
+      if (available <= 0) return '无票';
+      if (available > 10) return '有票';
+      return `${available}张票`;
+    }
+    // 未提供余票数据时，也统一显示“无票”
+    return '无票';
+  };
+
+  const isSeatAvailable = (seatType: string): boolean => {
+    const available = seatInfo?.[seatType]?.availableSeats;
+    return typeof available === 'number' && available > 0;
+  };
+
+  const formatDateWithWeek = (dateStr: string): string => {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      return dateStr;
+    }
+    const week = ['日','一','二','三','四','五','六'][d.getDay()];
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}（周${week}）`;
   };
 
   const getTotalPrice = (): number => {
@@ -149,7 +285,7 @@ const OrderPage: React.FC = () => {
     setIsConfirmModalOpen(true);
   };
 
-  const handleConfirmOrder = async () => {
+  const handleConfirmOrder = async (selectedSeatCodes: string[] = []) => {
     setIsConfirmModalOpen(false);
     
     if (!trainInfo) {
@@ -171,7 +307,8 @@ const OrderPage: React.FC = () => {
       orderId: `ORDER_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       totalPrice: getTotalPrice(),
       passengers: validPassengers,
-      ticketInfos: ticketInfos
+      ticketInfos: ticketInfos,
+      selectedSeatCodes
     };
     
     setOrderData(newOrderData);
@@ -204,7 +341,8 @@ const OrderPage: React.FC = () => {
         },
         passengers: orderData.passengers,
         ticketInfos: orderData.ticketInfos,
-        totalPrice: orderData.totalPrice
+        totalPrice: orderData.totalPrice,
+        selectedSeats: orderData.selectedSeatCodes || []
       };
       
       console.log('提交订单数据:', orderPayload);
@@ -289,6 +427,67 @@ const OrderPage: React.FC = () => {
 
   return (
     <div className="order-page">
+      {/* 顶部导航栏：与首页一致 */}
+      <header className="header">
+        <div className="header-container header-top">
+          {/* 左侧：Logo与标题 */}
+          <div className="brand">
+            <img className="brand-logo" src="/logo-12306.svg" alt="中国铁路12306" />
+            <div className="brand-text">
+              <div className="brand-title">中国铁路12306</div>
+              <div className="brand-subtitle">12306 CHINA RAILWAY</div>
+            </div>
+          </div>
+
+          {/* 中间：搜索框 */}
+          <div className="header-search">
+            <input
+              className="search-input"
+              type="text"
+              placeholder="搜索车票、 餐饮、 常旅客、 相关规章"
+            />
+            <button className="search-button">Q</button>
+          </div>
+
+          {/* 右侧：链接与操作 */}
+          <div className="header-links">
+            <a href="#" className="link">无障碍</a>
+            <span className="sep">|</span>
+            <a href="#" className="link">敬老版</a>
+            <span className="sep">|</span>
+            <a href="#" className="link">English</a>
+            <span className="sep">|</span>
+            <button className="link-btn" onClick={handleProfileClick}>我的12306</button>
+            <span className="sep">|</span>
+            {isLoggedIn ? (
+              <button className="link-btn" onClick={handleLogout}>退出</button>
+            ) : (
+              <>
+                <button className="link-btn" onClick={handleLoginClick}>登录</button>
+                <span className="space" />
+                <button className="link-btn" onClick={handleRegisterClick}>注册</button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* 导航栏：与首页一致，当前页高亮“车票” */}
+      <nav className="navbar">
+        <div className="nav-container">
+          <ul className="nav-links">
+            <li><a href="/">首页</a></li>
+            <li><a href="/train-list" className="active">车票</a></li>
+            <li><a href="#">团购服务</a></li>
+            <li><a href="#">会员服务</a></li>
+            <li><a href="#">站车服务</a></li>
+            <li><a href="#">商旅服务</a></li>
+            <li><a href="#">出行指南</a></li>
+            <li><a href="#">信息查询</a></li>
+          </ul>
+        </div>
+      </nav>
+
       <div className="order-container">
         <div className="order-header">
           <h2>确认订单信息</h2>
@@ -299,116 +498,204 @@ const OrderPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 列车信息 */}
+        {/* 列车信息（以下余票信息仅供参考） */}
         <div className="train-info-section">
-          <div className="section-header">
-            <h3>列车信息</h3>
-          </div>
-          <div className="train-info-card">
-            <div className="train-number">{trainInfo.trainNumber}</div>
-            <div className="train-route">
-              <div className="departure">
-                <div className="station">{trainInfo.from}</div>
-                <div className="time">{trainInfo.departureTime}</div>
+          <div className="train-summary">
+            <div className="train-summary-header">列车信息（以下余票信息仅供参考）</div>
+            <div className="train-summary-body">
+              <div className="train-summary-row">
+                {formatDateWithWeek(trainInfo.date)}，
+                {trainInfo.trainNumber}次 {trainInfo.from}站（{trainInfo.departureTime}开）—
+                {trainInfo.to}站（{trainInfo.arrivalTime}到）
               </div>
-              <div className="duration">
-                <div className="arrow">→</div>
-                <div className="time-duration">{trainInfo.duration}</div>
+              <div className="train-summary-seats">
+                <div className="seat-item">
+                  <span className="seat-name">二等座</span>
+                  {getSeatDiscountText('二等座') && (
+                    <span className="seat-discount">{getSeatDiscountText('二等座')}</span>
+                  )}
+                  <span className={isSeatAvailable('二等座') ? 'seat-availability' : 'seat-unavailable'}>
+                    {getSeatAvailabilityText('二等座')}
+                  </span>
+                </div>
+                <div className="seat-item">
+                  <span className="seat-name">商务座</span>
+                  {getSeatDiscountText('商务座') && (
+                    <span className="seat-discount">{getSeatDiscountText('商务座')}</span>
+                  )}
+                  <span className={isSeatAvailable('商务座') ? 'seat-availability' : 'seat-unavailable'}>
+                    {getSeatAvailabilityText('商务座')}
+                  </span>
+                </div>
+                <div className="seat-item">
+                  <span className="seat-name">一等座</span>
+                  {getSeatDiscountText('一等座') && (
+                    <span className="seat-discount">{getSeatDiscountText('一等座')}</span>
+                  )}
+                  <span className={isSeatAvailable('一等座') ? 'seat-availability' : 'seat-unavailable'}>
+                    {getSeatAvailabilityText('一等座')}
+                  </span>
+                </div>
+                <div className="seat-item">
+                  <span className="seat-name">无座</span>
+                  {getSeatDiscountText('无座') && (
+                    <span className="seat-discount">{getSeatDiscountText('无座')}</span>
+                  )}
+                  <span className={isSeatAvailable('无座') ? 'seat-availability' : 'seat-unavailable'}>
+                    {getSeatAvailabilityText('无座')}
+                  </span>
+                </div>
               </div>
-              <div className="arrival">
-                <div className="station">{trainInfo.to}</div>
-                <div className="time">{trainInfo.arrivalTime}</div>
+              <div className="train-summary-note">
+                *显示的价格均为实际活动折扣后票价，供您参考，查看公布票价 。具体票价以您确认支付时实际购买的铺别票价为准。
               </div>
             </div>
-            <div className="train-date">{trainInfo.date}</div>
           </div>
         </div>
 
-        {/* 乘客信息 */}
+        {/* 乘客信息（截图布局） */}
         <div className="passenger-section">
-          <div className="section-header">
-            <h3>选择乘车人</h3>
-            <button className="add-passenger-btn" onClick={() => setIsModalOpen(true)}>+ 添加乘车人</button>
+          <div className="passenger-header-row">
+            <div className="passenger-header-title">乘客信息（填写说明）</div>
+            <div className="passenger-search">
+              <input className="passenger-search-input" placeholder="输入乘客姓名" />
+              <button className="passenger-search-btn">Q</button>
+            </div>
           </div>
-          <div className="passenger-list">
-            {passengers.map(passenger => (
-              <div 
-                key={passenger.id} 
-                className={`passenger-item ${selectedPassengers.includes(passenger.id) ? 'selected' : ''}`}
-                onClick={() => handlePassengerSelect(passenger.id)}
-              >
-                <div className="passenger-checkbox">
+
+          <div className="passenger-chooser">
+            <div className="chooser-label">乘车人</div>
+            <div className="chooser-list">
+              {passengers.map(p => (
+                <label key={p.id} className="chooser-item">
                   <input 
                     type="checkbox" 
-                    checked={selectedPassengers.includes(passenger.id)}
-                    onChange={() => {}}
+                    checked={selectedPassengers.includes(p.id)}
+                    onChange={() => handlePassengerSelect(p.id)}
                   />
-                </div>
-                <div className="passenger-info">
-                  <div className="passenger-name">{passenger.name}</div>
-                  <div className="passenger-id">{passenger.idCard}</div>
-                  <div className={`passenger-type ${passenger.passengerType === '成人' ? 'adult' : passenger.passengerType === '儿童' ? 'child' : 'student'}`}>
-                    {passenger.passengerType}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 购票信息 */}
-        {ticketInfos.length > 0 && (
-          <div className="ticket-info-section">
-            <div className="section-header">
-              <h3>购票信息</h3>
+                  <span>
+                    {p.name}{p.passengerType && p.passengerType !== '成人' ? `（${p.passengerType}）` : ''}
+                  </span>
+                </label>
+              ))}
             </div>
-            <div className="ticket-table">
-              <div className="table-header">
-                <div className="col-passenger">乘车人</div>
-                <div className="col-ticket-type">票种</div>
-                <div className="col-seat-type">席别</div>
-                <div className="col-price">票价</div>
-              </div>
-              {ticketInfos.map(info => (
-                <div key={info.passengerId} className="table-row">
-                  <div className="col-passenger">{info.passengerName}</div>
-                  <div className="col-ticket-type">{info.ticketType}</div>
+            <button className="add-passenger-btn" onClick={() => setIsModalOpen(true)}>+ 添加乘车人</button>
+          </div>
+
+          <div className="passenger-divider" />
+
+          {/* 票表：序号 票种 席别 姓名 证件类型 证件号码 */}
+          <div className="passenger-table">
+            <div className="passenger-table-header">
+              <div className="col-index">序号</div>
+              <div className="col-ticket-type">票种</div>
+              <div className="col-seat-type">席别</div>
+              <div className="col-name">姓名</div>
+              <div className="col-id-type">证件类型</div>
+              <div className="col-id-number">证件号码</div>
+            </div>
+            {ticketInfos.map((info, idx) => {
+              const p = passengers.find(pp => pp.id === info.passengerId);
+              const idTypeLabel = getIdTypeLabel(p?.idType);
+              return (
+                <div key={info.passengerId} className="passenger-table-row">
+                  <div className="col-index">{idx + 1}</div>
+                  <div className="col-ticket-type">
+                    <select 
+                      className="square-select"
+                      value={info.ticketType}
+                      onChange={(e) => handleTicketTypeChange(info.passengerId, e.target.value as TicketInfo['ticketType'])}
+                    >
+                      <option value="成人票">成人票</option>
+                      <option value="儿童票">儿童票</option>
+                      <option value="学生票">学生票</option>
+                    </select>
+                  </div>
                   <div className="col-seat-type">
                     <select 
+                      className="square-select"
                       value={info.seatType}
                       onChange={(e) => handleSeatTypeChange(info.passengerId, e.target.value)}
                     >
-                      <option value="商务座">商务座</option>
-                      <option value="一等座">一等座</option>
-                      <option value="二等座">二等座</option>
-                      <option value="无座">无座</option>
+                      <option value="商务座">商务座（¥{getSeatPrice('商务座')}）</option>
+                      <option value="一等座">一等座（¥{getSeatPrice('一等座')}）</option>
+                      <option value="二等座">二等座（¥{getSeatPrice('二等座')}）</option>
+                      <option value="无座">无座（¥{getSeatPrice('无座')}）</option>
                     </select>
                   </div>
-                  <div className="col-price">¥{info.price}</div>
+                  <div className="col-name">{info.passengerName}</div>
+                  <div className="col-id-type">
+                    <select className="square-select" defaultValue={idTypeLabel}>
+                      <option value="居民身份证">居民身份证</option>
+                      <option value="外国人永久居留身份证">外国人永久居留身份证</option>
+                      <option value="港澳台居民居住证">港澳台居民居住证</option>
+                      <option value="护照">护照</option>
+                    </select>
+                  </div>
+                  <div className="col-id-number">{p?.idCard || ''}</div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
 
-        {/* 订单总计 */}
-        {ticketInfos.length > 0 && (
-          <div className="order-summary">
-            <div className="summary-content">
-              <div className="total-info">
-                <span className="total-label">总计：</span>
-                <span className="total-price">¥{getTotalPrice()}</span>
-              </div>
-              <button 
-                className="submit-order-btn"
-                onClick={handleSubmitOrder}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? '提交中...' : '提交订单'}
-              </button>
-            </div>
+          {/* 横幅图片 */}
+          <div className="order-banner">
+            <img src="/ordercheck.png" alt="乘意相伴 安心出行" />
           </div>
-        )}
+
+          {/* 协议说明与操作 */}
+          <div className="order-agreement">
+            提交订单表示已阅读并同意 
+            <a href="#" className="link">《国铁集团铁路旅客运输规程》</a> 
+            <a href="#" className="link">《服务条款》</a>
+          </div>
+          {/* 温馨提示（淡黄色底） */}
+          <div className="warm-tips">
+            <div className="warm-tips-title">温馨提示：</div>
+            <ol className="warm-tips-list">
+              <li>
+                一张有效身份证件同一乘车日期同一车次只能购买一张车票，高铁动卧列车除外。改签或变更到站后车票的乘车日期在春运期间，如再办理退票将按票面价格20%核收退票费。请合理安排行程，更多改签规则请查看
+                <a href="#" className="link">《退改说明》</a> 。
+              </li>
+              <li>
+                购买儿童票时，乘车儿童有有效身份证件的，请填写本人有效身份证件信息。自2023年1月1日起，每一名持票成年人旅客可免费携带一名未满6周岁且不单独占用席位的儿童乘车，超过一名时，超过人数应购买儿童优惠票。免费儿童可以在购票成功后添加。
+              </li>
+              <li>
+                购买残疾军人（伤残警察）优待票的，须在购票后、开车前办理换票手续方可进站乘车。换票时，不符合规定的减价优待条件，没有有效“中华人民共和国残疾军人证”或“中华人民共和国伤残人民警察证”的，不予换票，所购车票按规定办理退票手续。
+              </li>
+              <li>
+                一天内3次申请车票成功后取消订单（包含无座票时取消5次计为取消1次），当日将不能在12306继续购票。
+              </li>
+              <li>
+                购买铁路乘意险的注册用户年龄须在18周岁以上，使用非中国居民身份证注册的用户如购买铁路乘意险，须在
+                <a href="#" className="link">我的12306——个人信息</a>
+                如实填写“出生日期”。
+              </li>
+              <li>
+                父母为未成年子女投保，须在
+                <a href="#" className="link">我的乘车人</a>
+                登记未成年子女的有效身份证件信息。
+              </li>
+              <li>
+                未尽事宜详见
+                <a href="#" className="link">《铁路旅客运输规程》</a>
+                等有关规定和车站公告。
+              </li>
+            </ol>
+          </div>
+          <div className="order-actions">
+            <button className="btn-prev" onClick={() => navigate(-1)}>上一步</button>
+            <button 
+              className="btn-submit"
+              onClick={handleSubmitOrder}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? '提交中...' : '提交订单'}
+            </button>
+          </div>
+        </div>
+
+        {/* 移除旧购票信息与订单总计区块，使用上方新布局 */}
       </div>
       
       {/* 添加乘车人模态框 */}
@@ -427,6 +714,7 @@ const OrderPage: React.FC = () => {
         passengers={passengers}
         ticketInfos={ticketInfos}
         totalPrice={getTotalPrice()}
+        seatInfo={seatInfo}
       />
       
       {/* 订单处理界面 */}
@@ -469,6 +757,8 @@ const OrderPage: React.FC = () => {
           passengerCount: 0
         }}
       />
+      {/* 页脚（与主页一致的灰色区域）*/}
+      <Footer />
     </div>
   );
 };

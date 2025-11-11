@@ -1,3 +1,104 @@
+/* 横向筛选栏样式 */
+.filter-conditions.horizontal {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  margin: 16px 0 20px;
+}
+
+.filter-conditions.horizontal .date-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #e5e5e5;
+  overflow-x: auto;
+}
+
+.filter-conditions.horizontal .date-item {
+  border: 1px solid #dcdcdc;
+  background: #fafafa;
+  color: #333;
+  border-radius: 3px;
+  padding: 6px 10px;
+  cursor: pointer;
+  min-width: 64px;
+}
+
+.filter-conditions.horizontal .date-item .date-label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.filter-conditions.horizontal .date-item .date-weekday {
+  font-size: 12px;
+  color: #666;
+}
+
+.filter-conditions.horizontal .date-item.active {
+  border-color: #0066cc;
+  background: #eef6ff;
+}
+
+.filter-conditions.horizontal .time-range {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-conditions.horizontal .time-label {
+  font-size: 13px;
+  color: #333;
+}
+
+.filter-conditions.horizontal .time-select {
+  height: 30px;
+  padding: 4px 8px;
+  border: 1px solid #dcdcdc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+}
+
+.filter-conditions.horizontal .filter-line {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  gap: 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.filter-conditions.horizontal .filter-line:last-child {
+  border-bottom: none;
+}
+
+.filter-conditions.horizontal .line-label {
+  color: #333;
+  font-size: 13px;
+  min-width: 88px;
+}
+
+.filter-conditions.horizontal .line-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+}
+
+.filter-conditions.horizontal .line-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #333;
+}
+
+.filter-conditions.horizontal .line-option input[type="checkbox"] {
+  accent-color: #0066cc;
+  cursor: pointer;
+}
+
+/* 保留原有纵向样式以兼容其他页面（不再用于车票页） */
 .filter-conditions {
   background: #fff;
   border: 1px solid #e5e5e5;

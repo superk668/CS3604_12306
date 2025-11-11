@@ -25,6 +25,7 @@ export interface OrderData {
     price: number;
   }>;
   totalPrice: number;
+  selectedSeats?: string[];
 }
 
 export interface Order {
@@ -49,7 +50,8 @@ export const createOrder = async (orderData: OrderData): Promise<{ success: bool
       trainInfo: orderData.trainInfo,
       passengers: orderData.passengers,
       ticketInfos: orderData.ticketInfos,
-      totalPrice: orderData.totalPrice
+      totalPrice: orderData.totalPrice,
+      selectedSeats: orderData.selectedSeats || []
     });
     return response;
   } catch (error) {

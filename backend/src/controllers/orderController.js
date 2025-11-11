@@ -11,7 +11,8 @@ const createOrder = async (req, res) => {
       trainInfo,
       passengers,
       ticketInfos,
-      totalPrice
+      totalPrice,
+      selectedSeats = []
     } = req.body;
 
     // 验证必要参数
@@ -123,39 +124,43 @@ const createOrder = async (req, res) => {
       paymentTime: null
     }, { transaction });
 
-    // 创建乘客信息
+    // 创建乘客信息（与前端结构一一对应）
     const orderPassengers = [];
     let passengerIndex = 0;
 
     for (const ticketInfo of ticketInfos) {
-      for (let i = 0; i < ticketInfo.count; i++) {
-        const passenger = passengers[passengerIndex];
-        if (!passenger) {
-          await transaction.rollback();
-          return res.status(400).json({
-            success: false,
-            message: '乘客信息不完整'
-          });
-        }
-
-        // 分配座位号（简化版，实际应该有更复杂的座位分配算法）
-        const seatNumber = await allocateSeat(trainInfo.trainNumber, trainInfo.date, ticketInfo.seatType, transaction); // 修复字段名称
-
-        const orderPassenger = await OrderPassenger.create({
-          orderId: order.id,
-          passengerName: passenger.name,
-          idCard: passenger.idCard,
-          phone: passenger.phone,
-          passengerType: passenger.passengerType,
-          seatType: ticketInfo.seatType,
-          seatNumber,
-          ticketType: ticketInfo.ticketType,
-          price: ticketInfo.price
-        }, { transaction });
-
-        orderPassengers.push(orderPassenger);
-        passengerIndex++;
+      const passenger = passengers[passengerIndex];
+      if (!passenger) {
+        await transaction.rollback();
+        return res.status(400).json({
+          success: false,
+          message: '乘客信息不完整'
+        });
       }
+
+      const preferredCode = selectedSeats[passengerIndex];
+      const seatNumber = await allocateSeat(
+        trainInfo.trainNumber,
+        trainInfo.date,
+        ticketInfo.seatType,
+        transaction,
+        preferredCode
+      );
+
+      const orderPassenger = await OrderPassenger.create({
+        orderId: order.id,
+        passengerName: passenger.name,
+        idCard: passenger.idCard,
+        phone: passenger.phone,
+        passengerType: passenger.passengerType,
+        seatType: ticketInfo.seatType,
+        seatNumber,
+        ticketType: ticketInfo.ticketType,
+        price: ticketInfo.price
+      }, { transaction });
+
+      orderPassengers.push(orderPassenger);
+      passengerIndex++;
     }
 
     await transaction.commit();
@@ -212,7 +217,7 @@ const createOrder = async (req, res) => {
 };
 
 // 简化的座位分配算法
-const allocateSeat = async (trainNumber, date, seatType, transaction) => {
+const allocateSeat = async (trainNumber, date, seatType, transaction, preferredCode) => {
   // 这里是一个简化的座位分配算法
   // 实际应该根据车厢布局、已占用座位等进行复杂计算
   
@@ -257,7 +262,31 @@ const allocateSeat = async (trainNumber, date, seatType, transaction) => {
       maxSeats = 200;
   }
 
-  // 查找可用座位
+  // 辅助：根据索引推断座位字母（简化近似）
+  const letterForIndex = (idx) => {
+    if (seatType === '二等座') {
+      const letters = ['A', 'B', 'C', 'D', 'F'];
+      return letters[(idx - 1) % letters.length];
+    }
+    if (seatType === '一等座' || seatType === '商务座') {
+      const letters = ['A', 'C', 'D', 'F'];
+      return letters[(idx - 1) % letters.length];
+    }
+    // 其他类型简化为A
+    return 'A';
+  };
+
+  // 优先尝试分配符合偏好的座位
+  if (preferredCode) {
+    for (let i = 1; i <= maxSeats; i++) {
+      const seatNumber = `${seatPrefix}车${String(i).padStart(3, '0')}号`;
+      if (!occupiedSeats.includes(seatNumber) && letterForIndex(i) === preferredCode) {
+        return seatNumber;
+      }
+    }
+  }
+
+  // 若没有匹配的偏好或偏好座位已满，分配任意可用座位
   for (let i = 1; i <= maxSeats; i++) {
     const seatNumber = `${seatPrefix}车${String(i).padStart(3, '0')}号`;
     if (!occupiedSeats.includes(seatNumber)) {

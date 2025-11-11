@@ -6,8 +6,8 @@
 }
 
 .train-list-header {
-  background: #f8f9fa;
-  border-bottom: 2px solid #e5e5e5;
+  background: linear-gradient(0deg, #2f7fd6, #2f7fd6);
+  border-bottom: 2px solid #2a6fc0;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -19,19 +19,19 @@
   padding: 12px 0;
   font-weight: 500;
   font-size: 13px;
-  color: #333;
+  color: #fff;
 }
 
 .train-info-header {
   display: flex;
   align-items: center;
-  min-width: 600px;
+  min-width: 250px; /* 原为 600px，缩小以减少“历时”与席别间距 */
   padding: 0 15px;
 }
 
 .train-no-header,
-.station-header,
-.time-header,
+.stations-header,
+.times-header,
 .duration-header {
   display: flex;
   align-items: center;
@@ -43,37 +43,21 @@
 }
 
 .train-no-header:hover,
-.time-header:hover,
-.duration-header:hover {
-  background: #e9ecef;
+.times-header:hover,
+.duration-header:hover,
+.stations-header:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-.train-no-header {
-  width: 80px;
-}
+.train-no-header { width: 80px; }
+.stations-header { width: 120px; cursor: default; flex-direction: column; align-items: center; line-height: 1.2; }
+.times-header { width: 140px; flex-direction: column; align-items: center; line-height: 1.2; }
+.duration-header { width: 60px; }
 
-.station-header {
-  width: 80px;
-  cursor: default;
-}
-
-.time-header {
-  width: 70px;
-}
-
-.duration-header {
-  width: 60px;
-}
-
-.sort-icon {
-  font-size: 12px;
-  color: #999;
-  transition: color 0.2s;
-}
-
-.sort-icon.active {
-  color: #0066cc;
-}
+.sort-icon { font-size: 12px; color: #e6f0ff; transition: color 0.2s; }
+.sort-icon.active { color: #fff; }
+.times-sort { display: inline-flex; align-items: center; gap: 4px; }
+.times-sep { opacity: 0.7; margin: 0 6px; }
 
 .seat-headers {
   display: flex;
@@ -86,7 +70,8 @@
   text-align: center;
   padding: 8px 4px;
   font-size: 12px;
-  border-left: 1px solid #e5e5e5;
+  border-left: 1px solid #2a6fc0;
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -100,8 +85,9 @@
 }
 
 .train-list-body {
-  max-height: 600px;
-  overflow-y: auto;
+  /* 移除内置滚动，改为页面整体滚动 */
+  max-height: none;
+  overflow-y: visible;
 }
 
 .train-row {
@@ -122,7 +108,7 @@
 .train-info {
   display: flex;
   align-items: center;
-  min-width: 600px;
+  min-width: 250px; /* 原为 700px，缩小以减少主体列与席别间距 */
   padding: 15px;
 }
 
@@ -166,38 +152,14 @@
   background: #999999;
 }
 
-.station-info {
-  width: 80px;
-  padding: 0 12px;
-}
+.stations-info { width: 120px; padding: 0 12px; }
+.station-line { display: flex; align-items: center; justify-content: center; margin: 2px 0; }
+.station-name { font-size: 14px; font-weight: 500; color: #333; }
 
-.station {
-  text-align: center;
-}
-
-.station-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 2px;
-}
-
-.station-code {
-  font-size: 11px;
-  color: #999;
-}
-
-.time-info {
-  width: 70px;
-  text-align: center;
-  padding: 0 12px;
-}
-
-.time {
-  font-size: 16px;
-  font-weight: 500;
-  color: #333;
-}
+.times-info { width: 140px; text-align: center; padding: 0 12px; }
+.time-line { display: flex; justify-content: center; align-items: baseline; gap: 6px; }
+.time { font-size: 16px; font-weight: 500; color: #333; }
+.arrival-note { font-size: 12px; color: #999; }
 
 .duration-info {
   width: 60px;
@@ -299,23 +261,7 @@
 }
 
 /* 滚动条样式 */
-.train-list-body::-webkit-scrollbar {
-  width: 8px;
-}
-
-.train-list-body::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-.train-list-body::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-.train-list-body::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
+/* 已移除内置滚动条样式，使内容直接全部显示 */
 
 /* 响应式设计 */
 @media (max-width: 1200px) {
@@ -359,8 +305,8 @@
     justify-content: center;
   }
   
-  .station-info,
-  .time-info,
+  .stations-info,
+  .times-info,
   .duration-info {
     width: auto;
     padding: 0;

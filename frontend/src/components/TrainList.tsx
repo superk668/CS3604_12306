@@ -45,19 +45,16 @@ const TrainList: React.FC<TrainListProps> = ({ trains, onTrainSelect }) => {
   const [sortType, setSortType] = useState<SortType>('departure');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
-  // 座位类型配置
+  // 座位类型配置（按示例图收敛并排序）
   const seatTypes = [
     { key: 'business', label: '商务座', shortLabel: '商务' },
     { key: 'firstClassPlus', label: '特等座', shortLabel: '特等' },
     { key: 'firstClassPremium', label: '优选一等座', shortLabel: '优选一等' },
     { key: 'firstClass', label: '一等座', shortLabel: '一等' },
     { key: 'secondClass', label: '二等座', shortLabel: '二等' },
-    { key: 'secondClassPackage', label: '二等包座', shortLabel: '二等包' },
     { key: 'premiumSleeper', label: '高级软卧', shortLabel: '高软' },
     { key: 'softSleeper', label: '软卧/动卧', shortLabel: '软卧' },
-    { key: 'firstSleeper', label: '一等卧', shortLabel: '一等卧' },
     { key: 'hardSleeper', label: '硬卧', shortLabel: '硬卧' },
-    { key: 'secondSleeper', label: '二等卧', shortLabel: '二等卧' },
     { key: 'softSeat', label: '软座', shortLabel: '软座' },
     { key: 'hardSeat', label: '硬座', shortLabel: '硬座' },
     { key: 'noSeat', label: '无座', shortLabel: '无座' },
@@ -164,6 +161,14 @@ const TrainList: React.FC<TrainListProps> = ({ trains, onTrainSelect }) => {
     );
   };
 
+  const getArrivalNote = (fromTime: string, toTime: string) => {
+    // 简单判断次日到达：到达时间小于出发时间
+    if (toTime && fromTime && toTime.localeCompare(fromTime) < 0) {
+      return '次日到达';
+    }
+    return '当日到达';
+  };
+
   return (
     <div className="train-list">
       <div className="train-list-header">
@@ -172,19 +177,22 @@ const TrainList: React.FC<TrainListProps> = ({ trains, onTrainSelect }) => {
             <div className="train-no-header" onClick={() => handleSort('trainNo')}>
               车次 {renderSortIcon('trainNo')}
             </div>
-            <div className="station-header">出发站</div>
-            <div className="station-header">到达站</div>
-            <div className="time-header" onClick={() => handleSort('departure')}>
-              出发时间 {renderSortIcon('departure')}
+            <div className="stations-header">
+              <div>出发站</div>
+              <div>到达站</div>
             </div>
-            <div className="time-header" onClick={() => handleSort('arrival')}>
-              到达时间 {renderSortIcon('arrival')}
+            <div className="times-header">
+              <div className="times-sort" onClick={() => handleSort('departure')}>
+                出发时间 {renderSortIcon('departure')}
+              </div>
+              <div className="times-sort" onClick={() => handleSort('arrival')}>
+                到达时间 {renderSortIcon('arrival')}
+              </div>
             </div>
             <div className="duration-header" onClick={() => handleSort('duration')}>
               历时 {renderSortIcon('duration')}
             </div>
           </div>
-          
           <div className="seat-headers">
             {seatTypes.map(seatType => (
               <div key={seatType.key} className="seat-header" title={seatType.label}>
@@ -192,7 +200,6 @@ const TrainList: React.FC<TrainListProps> = ({ trains, onTrainSelect }) => {
               </div>
             ))}
           </div>
-          
           <div className="action-header">
             <div>备注</div>
           </div>
@@ -208,29 +215,25 @@ const TrainList: React.FC<TrainListProps> = ({ trains, onTrainSelect }) => {
                   {train.trainNo}
                 </span>
               </div>
-              
-              <div className="station-info">
-                <div className="station from-station">
-                  <div className="station-name">{train.fromStation}</div>
-                  <div className="station-code">{train.fromStationCode}</div>
+              <div className="stations-info">
+                <div className="station-line">
+                  <span className="station-name">{train.fromStation}</span>
+                </div>
+                <div className="station-line">
+                  <span className="station-name">{train.toStation}</span>
                 </div>
               </div>
-              
-              <div className="station-info">
-                <div className="station to-station">
-                  <div className="station-name">{train.toStation}</div>
-                  <div className="station-code">{train.toStationCode}</div>
+              <div className="times-info">
+                <div className="time-line">
+                  <span className="time">{train.fromTime}</span>
+                </div>
+                <div className="time-line">
+                  <span className="time">{train.toTime}</span>
+                </div>
+                <div className="time-line">
+                  <span className="arrival-note">{getArrivalNote(train.fromTime, train.toTime)}</span>
                 </div>
               </div>
-              
-              <div className="time-info">
-                <div className="time from-time">{train.fromTime}</div>
-              </div>
-              
-              <div className="time-info">
-                <div className="time to-time">{train.toTime}</div>
-              </div>
-              
               <div className="duration-info">
                 <div className="duration">{train.duration}</div>
               </div>

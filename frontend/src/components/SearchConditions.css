@@ -5,18 +5,39 @@
 }
 
 .search-main {
+  display: grid;
+  grid-template-columns: 120px 2fr 1fr 1fr 1fr auto;
+  align-items: end;
+  width: 100%;
+  padding: 12px 24px;
+  gap: 20px;
+  background: #eef6ff; /* 淡蓝背景 */
+  border: 1px solid #cfe1ff;
+  border-radius: 6px;
+}
+
+.trip-type-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 16px;
+  border-right: 1px solid #d5e7ff;
+}
+
+.trip-type-item {
   display: flex;
   align-items: center;
-  padding: 20px;
-  gap: 30px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e5e5e5;
+  gap: 6px;
+  font-size: 14px;
+  color: #333;
 }
 
 .station-selector {
-  display: flex;
-  align-items: center;
-  gap: 15px;
+  display: grid;
+  grid-template-columns: 1fr 40px 1fr;
+  align-items: end;
+  gap: 12px;
+  width: 100%;
 }
 
 .station-item {
@@ -35,7 +56,7 @@
   font-size: 16px;
   font-weight: 500;
   color: #333;
-  min-width: 80px;
+  width: 100%;
   padding: 8px 12px;
   background: #fff;
   border: 1px solid #ddd;
@@ -48,20 +69,49 @@
   border-color: #0066cc;
 }
 
+/* 站点输入框样式（用于车票查询页） */
+.station-input {
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+  width: 150px; /* 与日期输入统一宽度 */
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.station-input::placeholder {
+  color: #999;
+}
+
+.station-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+}
+
+/* 未填写时的红色高亮 */
+.station-input.invalid {
+  border-color: #ff4d4f;
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.15);
+}
+
 .swap-button {
   background: #0066cc;
   color: white;
   border: none;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background-color 0.2s;
-  margin-top: 18px;
 }
 
 .swap-button:hover {
@@ -80,20 +130,28 @@
   font-weight: normal;
 }
 
-.current-date {
-  font-size: 16px;
-  font-weight: 500;
+.date-input {
+  padding: 10px 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
   color: #333;
-  padding: 8px 12px;
   background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: border-color 0.2s;
+  transition: all 0.2s ease;
+  max-width: 150px;
 }
 
-.current-date:hover {
-  border-color: #0066cc;
+.date-input:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15);
+}
+
+.date-selector.disabled .date-input {
+  background: #f5f5f5;
+  border-color: #e5e5e5;
+  color: #aaa;
+  cursor: not-allowed;
 }
 
 .passenger-type-selector,
@@ -115,6 +173,11 @@
   gap: 15px;
 }
 
+.passenger-type-selector .radio-group {
+  flex-direction: column;
+  gap: 6px;
+}
+
 .radio-item {
   display: flex;
   align-items: center;
@@ -134,16 +197,22 @@
   color: white;
   border: none;
   border-radius: 4px;
-  padding: 12px 24px;
-  font-size: 16px;
+  padding: 10px 18px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
-  margin-top: 18px;
+  margin-top: 6px;
 }
 
 .search-button:hover {
   background: #e55a00;
+}
+
+.form-error {
+  margin-top: 6px;
+  color: #ff4d4f;
+  font-size: 12px;
 }
 
 /* 日期导航区域 */
@@ -208,6 +277,7 @@
 /* 响应式设计 */
 @media (max-width: 768px) {
   .search-main {
+    display: flex;
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
@@ -254,7 +324,7 @@
   }
   
   .station-name,
-  .current-date {
+  .date-input {
     font-size: 14px;
     padding: 6px 10px;
   }

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './OrderConfirmModal.css';
 
 interface TrainInfo {
@@ -19,6 +19,7 @@ interface Passenger {
   idCard: string;
   phone: string;
   passengerType: '成人' | '儿童' | '学生';
+  idType?: string;
 }
 
 interface TicketInfo {
@@ -32,11 +33,12 @@ interface TicketInfo {
 interface OrderConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (selectedSeatCodes: string[]) => void;
   trainInfo: TrainInfo | null;
   passengers: Passenger[];
   ticketInfos: TicketInfo[];
   totalPrice: number;
+  seatInfo?: Record<string, { price: number; availableSeats: number; totalSeats: number; isAvailable: boolean }>;
 }
 
 const OrderConfirmModal: React.FC<OrderConfirmModalProps> = ({
@@ -44,73 +46,143 @@ const OrderConfirmModal: React.FC<OrderConfirmModalProps> = ({
   onClose,
   onConfirm,
   trainInfo,
+  passengers,
   ticketInfos,
-  totalPrice
+  totalPrice,
+  seatInfo
 }) => {
   if (!isOpen || !trainInfo) return null;
+
+  const weekDay = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      const days = ['周日','周一','周二','周三','周四','周五','周六'];
+      return days[d.getDay()] || '';
+    } catch {
+      return '';
+    }
+  };
+
+  const maskId = (id: string) => {
+    if (!id) return '';
+    const len = id.length;
+    if (len <= 7) return id;
+    return `${id.slice(0,4)}${'*'.repeat(len - 7)}${id.slice(len-3)}`;
+  };
+
+  const getPassengerById = (pid: string) => passengers.find(p => p.id === pid);
+
+  const secondClassLeft = seatInfo?.['二等座']?.availableSeats;
+  const noSeatLeft = seatInfo?.['无座']?.availableSeats;
+
+  const [selectedCodes, setSelectedCodes] = useState<string[]>([]);
+  const toggleSeat = (code: string) => {
+    setSelectedCodes(prev => {
+      if (prev.includes(code)) {
+        return prev.filter(c => c !== code);
+      }
+      if (prev.length >= ticketInfos.length) return prev;
+      return [...prev, code];
+    });
+  };
 
   return (
     <div className="order-confirm-overlay">
       <div className="order-confirm-modal">
-        <div className="modal-header">
-          <h3>确认订单信息</h3>
+        <div className="modal-header confirm-header">
+          <h3>请核对以下信息</h3>
           <button className="close-btn" onClick={onClose}>×</button>
         </div>
         
         <div className="modal-content">
-          {/* 车次信息 */}
-          <div className="train-info-section">
-            <h4>车次信息</h4>
-            <div className="train-details">
-              <div className="train-number">{trainInfo.trainNumber}</div>
-              <div className="route-info">
-                <span className="station">{trainInfo.from}</span>
-                <span className="arrow">→</span>
-                <span className="station">{trainInfo.to}</span>
-              </div>
-              <div className="time-info">
-                <span>{trainInfo.date} {trainInfo.departureTime}</span>
-                <span className="duration">历时{trainInfo.duration}</span>
-                <span>{trainInfo.arrivalTime}</span>
-              </div>
-            </div>
+          {/* 信息总览（日期 + 车次 + 区间 + 时间）*/}
+          <div className="info-summary">
+            {trainInfo.date}（{weekDay(trainInfo.date)}）&nbsp;
+            {trainInfo.trainNumber}次&nbsp;
+            {trainInfo.from}（{trainInfo.departureTime}开） — {trainInfo.to}（{trainInfo.arrivalTime}到）
           </div>
 
-          {/* 乘车人信息 */}
-          <div className="passengers-section">
-            <h4>乘车人信息</h4>
-            <div className="passengers-list">
-              {ticketInfos.map((ticket, index) => (
-                <div key={index} className="passenger-item">
-                  <div className="passenger-name">{ticket.passengerName}</div>
-                  <div className="passenger-details">
-                    <span className="seat-type">{ticket.seatType}</span>
-                    <span className="ticket-type">{ticket.ticketType}</span>
-                    <span className="price">¥{ticket.price}</span>
-                  </div>
+          {/* 核对表格 */}
+          <div className="check-table">
+            <div className="check-table-header">
+              <div>序号</div>
+              <div>席别</div>
+              <div>票种</div>
+              <div>姓名</div>
+              <div>证件类型</div>
+              <div>证件号码</div>
+            </div>
+            {ticketInfos.map((ticket, index) => {
+              const p = getPassengerById(ticket.passengerId);
+              return (
+                <div key={index} className="check-table-row">
+                  <div>{index + 1}</div>
+                  <div>{ticket.seatType}</div>
+                  <div>{ticket.ticketType}</div>
+                  <div>{ticket.passengerName}</div>
+                  <div>{p?.idType || '居民身份证'}</div>
+                  <div>{maskId(p?.idCard || '')}</div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
-          {/* 费用明细 */}
-          <div className="price-section">
-            <div className="price-breakdown">
-              <div className="price-item">
-                <span>票价总计</span>
-                <span>¥{totalPrice}</span>
-              </div>
-              <div className="price-item total">
-                <span>应付金额</span>
-                <span className="total-amount">¥{totalPrice}</span>
-              </div>
+          {/* 说明与选座展示（交互）*/}
+          <div className="note-line">*如果本次列车剩余席位无法满足您的选座需求，系统将自动为您分配席位。</div>
+
+          <div className="seat-preference">
+            <div className="seat-pref-title">
+              <span className="bell" aria-hidden>🔔</span>
+              选座啦
             </div>
+            <div className="seat-pref-grid">
+              <span className="muted">窗</span>
+              <button
+                className={`seat-opt${selectedCodes.includes('A') ? ' selected' : ''}`}
+                onClick={() => toggleSeat('A')}
+                disabled={selectedCodes.length >= ticketInfos.length && !selectedCodes.includes('A')}
+              >A</button>
+              <button
+                className={`seat-opt${selectedCodes.includes('B') ? ' selected' : ''}`}
+                onClick={() => toggleSeat('B')}
+                disabled={selectedCodes.length >= ticketInfos.length && !selectedCodes.includes('B')}
+              >B</button>
+              <button
+                className={`seat-opt${selectedCodes.includes('C') ? ' selected' : ''}`}
+                onClick={() => toggleSeat('C')}
+                disabled={selectedCodes.length >= ticketInfos.length && !selectedCodes.includes('C')}
+              >C</button>
+              <span className="muted">过道</span>
+              <button
+                className={`seat-opt${selectedCodes.includes('D') ? ' selected' : ''}`}
+                onClick={() => toggleSeat('D')}
+                disabled={selectedCodes.length >= ticketInfos.length && !selectedCodes.includes('D')}
+              >D</button>
+              <button
+                className={`seat-opt${selectedCodes.includes('F') ? ' selected' : ''}`}
+                onClick={() => toggleSeat('F')}
+                disabled={selectedCodes.length >= ticketInfos.length && !selectedCodes.includes('F')}
+              >F</button>
+              <span className="muted">窗</span>
+            </div>
+            <div className="seat-selected">已选座 {selectedCodes.length}/{ticketInfos.length}</div>
+          </div>
+
+          <div className="tip-red">*按现行规定，学生票购票区间必须与学生证上的乘车区间一致，否则车站将不予换票。</div>
+          <div className="stock-info">
+            本次列车，二等座余票{typeof secondClassLeft === 'number' ? secondClassLeft : '充足'}张，无座余票{typeof noSeatLeft === 'number' ? noSeatLeft : '充足'}张。
+          </div>
+
+          {/* 金额展示 */}
+          <div className="price-inline">
+            <span>应付金额：</span>
+            <span className="total-amount">¥{totalPrice}</span>
           </div>
         </div>
 
         <div className="modal-footer">
-          <button className="cancel-btn" onClick={onClose}>取消</button>
-          <button className="confirm-btn" onClick={onConfirm}>确认订单</button>
+          <button className="cancel-btn" onClick={onClose}>返回修改</button>
+          <button className="confirm-btn" onClick={() => onConfirm(selectedCodes)}>确认</button>
         </div>
       </div>
     </div>
