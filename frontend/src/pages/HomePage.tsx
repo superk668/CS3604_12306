@@ -23,12 +23,12 @@ const HomePage: React.FC = () => {
   const { user, isLoggedIn, logout } = useAuth();
 
   const carouselItems: CarouselItem[] = [
-    { id: 1, image: '/slide-1.svg', title: '轮播一' },
-    { id: 2, image: '/slide-2.svg', title: '轮播二' },
-    { id: 3, image: '/slide-3.svg', title: '轮播三' },
-    { id: 4, image: '/slide-4.svg', title: '轮播四' },
-    { id: 5, image: '/slide-5.svg', title: '轮播五' },
-    { id: 6, image: '/slide-6.svg', title: '轮播六' },
+    { id: 1, image: '/homepage/Carousel/Carousel_1.png', title: '轮播一' },
+    { id: 2, image: '/homepage/Carousel/Carousel_2.png', title: '轮播二' },
+    { id: 3, image: '/homepage/Carousel/Carousel_3.png', title: '轮播三' },
+    { id: 4, image: '/homepage/Carousel/Carousel_4.jpg', title: '轮播四' },
+    { id: 5, image: '/homepage/Carousel/Carousel_5.jpg', title: '轮播五' },
+    { id: 6, image: '/homepage/Carousel/Carousel_6.jpg', title: '轮播六' },
   ];
 
   const handleBookingSearch = (bookingData: BookingData) => {

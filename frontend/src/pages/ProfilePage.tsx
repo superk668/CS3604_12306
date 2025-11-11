@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import AddPassengerModal from '../components/AddPassengerModal';
+import { getPassengers as apiGetPassengers, addPassenger as apiAddPassenger, updatePassenger as apiUpdatePassenger, deletePassenger as apiDeletePassenger, type PassengerFormData } from '../services/passengerService';
 import './ProfilePage.css';
+import './HomePage.css';
 
 interface Passenger {
   id: string;
@@ -10,6 +12,8 @@ interface Passenger {
   idCard: string;
   phone: string;
   passengerType: '成人' | '儿童' | '学生';
+  idType?: string;
+  isDefault?: boolean;
 }
 
 interface Order {
@@ -30,11 +34,15 @@ interface Order {
 const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const { user, isLoggedIn, logout, isLoading } = useAuth();
-  const [activeSection, setActiveSection] = useState('personal-info');
+  const [activeSection, setActiveSection] = useState('center-home');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPassenger, setEditingPassenger] = useState<Passenger | null>(null);
   const [orderFilter, setOrderFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
+  // 搜索与批量选择
+  const [searchInput, setSearchInput] = useState('');
+  const [searchName, setSearchName] = useState('');
+  const [selectedPassengerIds, setSelectedPassengerIds] = useState<string[]>([]);
   
   // 乘客数据 - 必须在所有条件渲染之前声明
   const [passengers, setPassengers] = useState<Passenger[]>([]);
@@ -60,9 +68,24 @@ const ProfilePage: React.FC = () => {
   useEffect(() => {
     const fetchPassengers = async () => {
       try {
-        const { getPassengers } = await import('../services/passengerService');
-        const passengerList = await getPassengers();
-        setPassengers(passengerList);
+        const passengerList = await apiGetPassengers();
+        // 强制保证首位为登录用户本人
+        let normalized = passengerList.slice();
+        if (user) {
+          const hasSelf = normalized.some(p => p.isDefault || (p.name === user.realName && p.idCard === user.idNumber));
+          if (!hasSelf) {
+            normalized.unshift({
+              id: 'self',
+              name: user.realName,
+              idCard: user.idNumber,
+              phone: user.phoneNumber,
+              passengerType: '成人',
+              idType: user.idType,
+              isDefault: true
+            });
+          }
+        }
+        setPassengers(normalized);
       } catch (error) {
         console.error('获取乘车人信息失败:', error);
         // 如果获取失败，使用用户基本信息作为默认乘车人
@@ -73,7 +96,9 @@ const ProfilePage: React.FC = () => {
               name: user.realName,
               idCard: user.idNumber,
               phone: user.phoneNumber,
-              passengerType: '成人'
+              passengerType: '成人',
+              idType: user.idType,
+              isDefault: true
             }
           ]);
         }
@@ -117,7 +142,24 @@ const ProfilePage: React.FC = () => {
   const handleLogout = async () => {
     if (window.confirm('确定要退出登录吗？')) {
       await logout();
-      navigate('/');
+      // 与首页保持一致：退出后刷新页面状态
+      window.location.reload();
+    }
+  };
+
+  const handleLoginClick = () => {
+    navigate('/login');
+  };
+
+  const handleRegisterClick = () => {
+    navigate('/register');
+  };
+
+  const handleProfileClick = () => {
+    if (isLoggedIn) {
+      navigate('/profile');
+    } else {
+      navigate('/login');
     }
   };
 
@@ -127,6 +169,70 @@ const ProfilePage: React.FC = () => {
     if (section === 'orders') {
       fetchOrders();
     }
+  };
+
+  const getGreetingPeriod = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return '上午';
+    if (hour < 18) return '下午';
+    return '晚上';
+  };
+
+  // ===== 辅助函数：脱敏显示与格式化 =====
+  const maskIdNumber = (id: string | undefined) => {
+    if (!id) return '未设置';
+    const len = id.length;
+    if (len <= 7) return id;
+    const first = id.slice(0, 4);
+    const last = id.slice(-3);
+    return first + '*'.repeat(len - 7) + last;
+  };
+
+  const maskPhoneNumber = (phone: string | undefined) => {
+    if (!phone) return '未设置';
+    const digits = phone.replace(/\D/g, '');
+    const len = digits.length;
+    if (len < 7) return `(+86) ${digits}`;
+    const first3 = digits.slice(0, 3);
+    const last4 = digits.slice(-4);
+    const stars = '*'.repeat(Math.max(0, len - 7));
+    return `(+86) ${first3}${stars}${last4}`;
+  };
+
+  const formatIdType = (idType: string | undefined) => {
+    if (!idType) return '未设置';
+    const t = idType.toLowerCase();
+    if (t === 'id_card' || t === '1') return '中国居民身份证';
+    if (t === '2') return '外国人永久身份证';
+    if (t === '3') return '港澳台居民身份证';
+    return idType;
+  };
+
+  const formatPassengerType = (type: string | undefined) => {
+    if (!type) return '未设置';
+    const t = type.toLowerCase();
+    if (t === 'adult' || t === '1') return '成人';
+    if (t === 'child' || t === '2') return '儿童';
+    if (t === 'student' || t === '3') return '学生';
+    return type;
+  };
+
+  // ===== 编辑按钮占位处理（保留现有跳转关系） =====
+  const handleEditContact = () => {
+    // 这里仅提供占位交互，实际编辑表单可后续补充
+    console.log('编辑联系方式');
+  };
+
+  const handleEditExtra = () => {
+    console.log('编辑附加信息');
+  };
+
+  const handleStudentRefresh = () => {
+    console.log('学生资质刷新');
+  };
+
+  const handleStudentQuery = () => {
+    console.log('学生资质查询');
   };
 
   // 获取订单列表
@@ -238,10 +344,14 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleDeletePassenger = async (id: string) => {
+    const target = passengers.find(p => p.id === id);
+    if (target?.isDefault) {
+      alert('不能删除默认乘车人（本人）');
+      return;
+    }
     if (window.confirm('确定要删除这个乘车人吗？')) {
       try {
-        const { deletePassenger } = await import('../services/passengerService');
-        await deletePassenger(id);
+        await apiDeletePassenger(id);
         setPassengers(prev => prev.filter(p => p.id !== id));
       } catch (error) {
         console.error('删除乘车人失败:', error);
@@ -255,10 +365,9 @@ const ProfilePage: React.FC = () => {
     setEditingPassenger(null);
   };
 
-  const handlePassengerAdd = async (passengerData: Omit<Passenger, 'id'>) => {
+  const handlePassengerAdd = async (passengerData: PassengerFormData) => {
     try {
-      const { addPassenger } = await import('../services/passengerService');
-      const newPassenger = await addPassenger(passengerData);
+      const newPassenger = await apiAddPassenger(passengerData);
       setPassengers(prev => [...prev, newPassenger]);
     } catch (error) {
       console.error('添加乘车人失败:', error);
@@ -266,10 +375,9 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  const handlePassengerEdit = async (id: string, passengerData: Omit<Passenger, 'id'>) => {
+  const handlePassengerEdit = async (id: string, passengerData: PassengerFormData) => {
     try {
-      const { updatePassenger } = await import('../services/passengerService');
-      const updatedPassenger = await updatePassenger(id, passengerData);
+      const updatedPassenger = await apiUpdatePassenger(id, passengerData);
       setPassengers(prev => prev.map(p => 
         p.id === id ? updatedPassenger : p
       ));
@@ -346,78 +454,173 @@ const ProfilePage: React.FC = () => {
 
   return (
     <div className="profile-page">
-      {/* 头部 */}
-      <header className="profile-header">
-        <div className="header-container">
-          <div className="logo">
-            <img src="/logo.png" alt="12306" />
-            <span>中国铁路12306</span>
+      {/* 顶部导航栏（与首页一致）*/}
+      <header className="header">
+        <div className="header-container header-top">
+          {/* 左侧：Logo与标题 */}
+          <div className="brand">
+            <img className="brand-logo" src="/logo-12306.svg" alt="中国铁路12306" />
+            <div className="brand-text">
+              <div className="brand-title">中国铁路12306</div>
+              <div className="brand-subtitle">12306 CHINA RAILWAY</div>
+            </div>
           </div>
-          <div className="header-actions">
-            <button className="logout-btn" onClick={handleLogout}>
-              退出登录
-            </button>
-            <button className="back-home-btn" onClick={handleBackToHome}>
-              返回首页
-            </button>
+
+          {/* 中间：搜索框 */}
+          <div className="header-search">
+            <input
+              className="search-input"
+              type="text"
+              placeholder="搜索车票、 餐饮、 常旅客、 相关规章"
+            />
+            <button className="search-button">Q</button>
+          </div>
+
+          {/* 右侧：链接与操作 */}
+          <div className="header-links">
+            <a href="#" className="link">无障碍</a>
+            <span className="sep">|</span>
+            <a href="#" className="link">敬老版</a>
+            <span className="sep">|</span>
+            <a href="#" className="link">English</a>
+            <span className="sep">|</span>
+            <button className="link-btn" onClick={handleProfileClick}>我的12306</button>
+            <span className="sep">|</span>
+            {isLoggedIn ? (
+              <button className="link-btn" onClick={handleLogout}>退出</button>
+            ) : (
+              <>
+                <button className="link-btn" onClick={handleLoginClick}>登录</button>
+                <span className="space" />
+                <button className="link-btn" onClick={handleRegisterClick}>注册</button>
+              </>
+            )}
           </div>
         </div>
       </header>
+
+      {/* 导航栏（与首页一致）*/}
+      <nav className="navbar">
+        <div className="nav-container">
+          <ul className="nav-links">
+            <li><a href="/">首页</a></li>
+            <li><a href="/train-list">车票</a></li>
+            <li><a href="#">团购服务</a></li>
+            <li><a href="#">会员服务</a></li>
+            <li><a href="#">站车服务</a></li>
+            <li><a href="#">商旅服务</a></li>
+            <li><a href="#">出行指南</a></li>
+            <li><a href="#">信息查询</a></li>
+          </ul>
+        </div>
+      </nav>
 
       {/* 主要内容 */}
       <div className="profile-main">
         {/* 左侧导航 */}
         <aside className="profile-sidebar">
-          <div className="user-info-card">
-            <div className="avatar">
-              <span>{user.realName.charAt(0)}</span>
-            </div>
-            <div className="user-details">
-              <h3>{user.realName}</h3>
-              <p>{user.phoneNumber}</p>
-            </div>
-          </div>
+          {/* 删除用户信息卡片 */}
 
           <nav className="sidebar-nav">
+            {/* 顶层标题 */}
             <div className="nav-group">
-              <h4>个人信息</h4>
-              <ul>
-                <li>
-                  <button 
-                    className={activeSection === 'personal-info' ? 'active' : ''}
-                    onClick={() => handleSectionChange('personal-info')}
-                  >
-                    查看个人信息
-                  </button>
-                </li>
-              </ul>
+              <h4>
+                <button
+                  type="button"
+                  className="group-button"
+                  onClick={() => handleSectionChange('center-home')}
+                  aria-pressed={activeSection === 'center-home'}
+                >
+                  个人中心
+                </button>
+              </h4>
+              <ul />
             </div>
 
-            <div className="nav-group">
-              <h4>常用信息管理</h4>
-              <ul>
-                <li>
-                  <button 
-                    className={activeSection === 'passengers' ? 'active' : ''}
-                    onClick={() => handleSectionChange('passengers')}
-                  >
-                    乘车人
-                  </button>
-                </li>
-              </ul>
-            </div>
-
+            {/* 订单中心 */}
             <div className="nav-group">
               <h4>订单中心</h4>
               <ul>
                 <li>
-                  <button 
+                  <button
                     className={activeSection === 'orders' ? 'active' : ''}
                     onClick={() => handleSectionChange('orders')}
                   >
                     火车票订单
                   </button>
                 </li>
+                <li><button disabled>候补订单</button></li>
+                <li><button disabled>计次•定期票订单</button></li>
+                <li><button disabled>约号订单</button></li>
+                <li><button disabled>雪具快运订单</button></li>
+                <li><button disabled>餐饮•特产</button></li>
+                <li><button disabled>保险订单</button></li>
+                <li><button disabled>电子发票</button></li>
+              </ul>
+            </div>
+
+            {/* 本人车票 */}
+            <div className="nav-group">
+              <h4>本人车票</h4>
+              <ul />
+            </div>
+
+            {/* 会员中心 */}
+            <div className="nav-group">
+              <h4>会员中心</h4>
+              <ul />
+            </div>
+
+            {/* 个人信息 */}
+            <div className="nav-group">
+              <h4>个人信息</h4>
+              <ul>
+                <li>
+                  <button
+                    className={activeSection === 'personal-info' ? 'active' : ''}
+                    onClick={() => handleSectionChange('personal-info')}
+                  >
+                    查看个人信息
+                  </button>
+                </li>
+                <li><button disabled>账号安全</button></li>
+                <li><button disabled>手机核验</button></li>
+                <li><button disabled>账号注销</button></li>
+              </ul>
+            </div>
+
+            {/* 常用信息管理 */}
+            <div className="nav-group">
+              <h4>常用信息管理</h4>
+              <ul>
+                <li>
+                  <button
+                    className={activeSection === 'passengers' ? 'active' : ''}
+                    onClick={() => handleSectionChange('passengers')}
+                  >
+                    乘车人
+                  </button>
+                </li>
+                <li><button disabled>地址管理</button></li>
+              </ul>
+            </div>
+
+            {/* 温馨服务 */}
+            <div className="nav-group">
+              <h4>温馨服务</h4>
+              <ul>
+                <li><button disabled>重点旅客预约</button></li>
+                <li><button disabled>遗失物品查找</button></li>
+                <li><button disabled>服务查询</button></li>
+              </ul>
+            </div>
+
+            {/* 投诉和建议 */}
+            <div className="nav-group">
+              <h4>投诉和建议</h4>
+              <ul>
+                <li><button disabled>投诉</button></li>
+                <li><button disabled>建议</button></li>
               </ul>
             </div>
           </nav>
@@ -425,6 +628,41 @@ const ProfilePage: React.FC = () => {
 
         {/* 右侧内容区域 */}
         <main className="profile-content">
+          {activeSection === 'center-home' && (
+            <div className="content-section">
+              <div className="center-welcome">
+                <div className="welcome-header">
+                  <div className="megaphone-icon" aria-hidden="true" />
+                  <div className="greeting-text">
+                    {(user && user.realName) ? `${user.realName}，${getGreetingPeriod()}好！` : `您好，${getGreetingPeriod()}好！`}
+                  </div>
+                </div>
+                <div className="notice-card">
+                  <p>欢迎您登录中国铁路客户服务中心网站。</p>
+                  <p>如果您的密码在其他网站也使用，建议您修改本网站密码。</p>
+                  <p><a className="action-link" href="#" onClick={(e) => e.preventDefault()}>点击成为会员</a></p>
+                  <p>如果您需要预订车票，请您点击<a className="action-link" href="/train-list">车票预订</a>。</p>
+                </div>
+                <div className="qr-grid">
+                  <div className="qr-card">
+                    <div className="qr-code" />
+                    <div className="qr-text">使用微信扫一扫，可通过<br />微信公众号接收12306行程通知</div>
+                  </div>
+                  <div className="qr-card">
+                    <div className="qr-code" />
+                    <div className="qr-text">使用支付宝扫一扫，可通过<br />支付宝通知提醒接收12306行程通知</div>
+                  </div>
+                </div>
+                <div className="warm-tips">
+                  <div className="tips-title">温馨提示：</div>
+                  <ol>
+                    <li>消息通知方式进行相关调整，将通过“铁路12306”App客户端为您推送相关消息（需开启通知权限）。您也可以扫描关注“铁路12306”微信公众号或支付宝生活号，选择通过微信或支付宝接收。列车运行调整的通知仍然发送短信通知给您。</li>
+                    <li>您可通过“账号安全”中的“通知设置”修改您接收信息服务的方式。</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          )}
           {activeSection === 'personal-info' && (
             <div className="content-section">
               <div className="section-header">
@@ -436,55 +674,87 @@ const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="info-card">
-                <h3>基本信息</h3>
-                <div className="info-grid">
-                  <div className="info-item">
-                    <label>用户名：</label>
-                    <span>{user.username}</span>
+              {/* 基本信息 */}
+              <section className="info-section">
+                <div className="section-title">基本信息</div>
+                <div className="kv-list">
+                  <div className="kv-item">
+                    <label className="kv-label">* 用户名：</label>
+                    <span className="kv-value">{user.username}</span>
                   </div>
-                  <div className="info-item">
-                    <label>姓名：</label>
-                    <span>{user.realName}</span>
+                  <div className="kv-item">
+                    <label className="kv-label">* 姓名：</label>
+                    <span className="kv-value">{user.realName}</span>
                   </div>
-                  <div className="info-item">
-                    <label>证件类型：</label>
-                    <span>{user.idType === 'id_card' ? '身份证' : user.idType}</span>
+                  <div className="kv-item">
+                    <label className="kv-label">国家/地区：</label>
+                    <span className="kv-value">中国China</span>
                   </div>
-                  <div className="info-item">
-                    <label>证件号码：</label>
-                    <span>{user.idNumber}</span>
+                  <div className="kv-item">
+                    <label className="kv-label">* 证件类型：</label>
+                    <span className="kv-value">{formatIdType(user.idType)}</span>
                   </div>
-                  <div className="info-item">
-                    <label>手机号：</label>
-                    <span>{user.phoneNumber}</span>
+                  <div className="kv-item">
+                    <label className="kv-label">* 证件号码：</label>
+                    <span className="kv-value">{maskIdNumber(user.idNumber)}</span>
                   </div>
-                  <div className="info-item">
-                    <label>邮箱：</label>
-                    <span>{user.email || '未设置'}</span>
+                  <div className="kv-item">
+                    <label className="kv-label">核验状态：</label>
+                    <span className="kv-value verified-tag">已通过</span>
                   </div>
-                  <div className="info-item">
-                    <label>乘客类型：</label>
-                    <span>{user.passengerType === 'adult' ? '成人' : user.passengerType === 'child' ? '儿童' : '学生'}</span>
-                  </div>
-                  <div className="info-item">
-                    <label>账户状态：</label>
-                    <span className={user.status === 'active' ? 'status-active' : 'status-inactive'}>
-                      {user.status === 'active' ? '正常' : '禁用'}
-                    </span>
-                  </div>
-                  <div className="info-item">
-                    <label>注册时间：</label>
-                    <span>{new Date(user.createdAt).toLocaleString()}</span>
-                  </div>
-                  {user.lastLoginAt && (
-                    <div className="info-item">
-                      <label>最后登录：</label>
-                      <span>{new Date(user.lastLoginAt).toLocaleString()}</span>
-                    </div>
-                  )}
                 </div>
-              </div>
+              </section>
+
+              {/* 联系方式 */}
+              <section className="info-section">
+                <div className="section-header-inline">
+                  <div className="section-title">联系方式</div>
+                  <div className="section-toolbar">
+                    <button className="edit-btn" onClick={handleEditContact}>编辑</button>
+                  </div>
+                </div>
+                <div className="kv-list">
+                  <div className="kv-item">
+                    <label className="kv-label">* 手机号：</label>
+                    <span className="kv-value">{maskPhoneNumber(user.phoneNumber)}</span>
+                    <span className="verified-inline">已通过核验</span>
+                  </div>
+                  <div className="kv-item">
+                    <label className="kv-label">邮箱：</label>
+                    <span className="kv-value">{user.email || '未设置'}</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* 附加信息 */}
+              <section className="info-section">
+                <div className="section-header-inline">
+                  <div className="section-title">附加信息</div>
+                  <div className="section-toolbar">
+                    <button className="edit-btn" onClick={handleEditExtra}>编辑</button>
+                  </div>
+                </div>
+                <div className="kv-list">
+                  <div className="kv-item">
+                    <label className="kv-label">* 优惠(待)类型：</label>
+                    <span className="kv-value">{formatPassengerType(user.passengerType)}</span>
+                  </div>
+                </div>
+              </section>
+
+              {/* 学生资质查询 */}
+              <section className="info-section">
+                <div className="section-header-inline">
+                  <div className="section-title">学生资质查询</div>
+                  <div className="section-toolbar">
+                    <button className="detail-btn" onClick={handleStudentRefresh}>刷新</button>
+                    <button className="detail-btn" onClick={handleStudentQuery}>查询</button>
+                  </div>
+                </div>
+                <p className="section-note">
+                  学生资质查询服务，提供查询本人的学生购票资质、购票优惠区间及年度剩余优惠票购票次数。
+                </p>
+              </section>
             </div>
           )}
 
@@ -500,44 +770,130 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div className="passengers-section">
-                <div className="section-actions">
-                  <button className="add-passenger-btn" onClick={handleAddPassenger}>
-                    + 添加乘车人
-                  </button>
+                {/* 搜索工具栏 */}
+                <div className="passenger-tools">
+                  <div className="search-input-wrap">
+                    <input
+                      type="text"
+                      placeholder="请输入乘客姓名"
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      className="search-input"
+                    />
+                    {searchInput && (
+                      <button
+                        type="button"
+                        className="clear-btn"
+                        aria-label="清空"
+                        onClick={() => { setSearchInput(''); setSearchName(''); setSelectedPassengerIds([]); }}
+                      >×</button>
+                    )}
+                  </div>
+                  <button
+                    className="search-btn"
+                    onClick={() => { setSearchName(searchInput.trim()); setSelectedPassengerIds([]); }}
+                  >查询</button>
                 </div>
 
-                <div className="passengers-list">
-                  {passengers.map(passenger => (
-                    <div key={passenger.id} className="passenger-card">
-                      <div className="passenger-info">
-                        <h4>{passenger.name}</h4>
-                        <p>身份证：{passenger.idCard}</p>
-                        <p>手机号：{passenger.phone}</p>
-                        <p>类型：{passenger.passengerType}</p>
-                      </div>
-                      <div className="passenger-actions">
-                        <button 
-                          className="edit-btn" 
-                          onClick={() => handleEditPassenger(passenger)}
-                        >
-                          编辑
-                        </button>
-                        <button 
-                          className="delete-btn"
-                          onClick={() => handleDeletePassenger(passenger.id)}
-                        >
-                          删除
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {passengers.length === 0 && (
-                    <div className="empty-state">
-                      <p>暂无乘车人信息，请添加乘车人</p>
-                    </div>
-                  )}
+                {/* 管理操作栏 */}
+                <div className="manage-bar">
+                  <button className="add-action" onClick={handleAddPassenger}>➕ 添加</button>
+                  <button
+                    className="bulk-delete-action"
+                    onClick={async () => {
+                      if (selectedPassengerIds.length === 0) {
+                        alert('请选择需要删除的乘车人');
+                        return;
+                      }
+                      if (!window.confirm(`确定批量删除选中的${selectedPassengerIds.length}个乘车人吗？`)) return;
+                      try {
+                        const toDelete = selectedPassengerIds.filter(id => {
+                          const p = passengers.find(x => x.id === id);
+                          return !p?.isDefault;
+                        });
+                        for (const id of toDelete) {
+                          await apiDeletePassenger(id);
+                        }
+                        setPassengers(prev => prev.filter(p => !toDelete.includes(p.id)));
+                        setSelectedPassengerIds([]);
+                      } catch (err) {
+                        console.error('批量删除失败:', err);
+                        alert('批量删除失败，请稍后重试');
+                      }
+                    }}
+                  >🗑 批量删除</button>
                 </div>
+
+                {/* 乘车人表格 */}
+                {(() => {
+                  // 排序：默认乘车人优先
+                  const sorted = [...passengers].sort((a, b) => (
+                    (b.isDefault ? 1 : 0) - (a.isDefault ? 1 : 0)
+                  ));
+                  const filtered = sorted.filter(p => !searchName || p.name.includes(searchName));
+                  return (
+                    <div className="passenger-table">
+                      {/* 表头 */}
+                      <div className="table-header">
+                        <div className="col-check" />
+                        <div className="col-index">序号</div>
+                        <div className="col-name">姓名</div>
+                        <div className="col-idtype">证件类型</div>
+                        <div className="col-idnumber">证件号码</div>
+                        <div className="col-phone">手机／电话</div>
+                        <div className="col-verify">核验状态</div>
+                        <div className="col-actions">操作</div>
+                      </div>
+
+                      {/* 行 */}
+                      {filtered.map((p, idx) => (
+                        <div key={p.id} className="table-row">
+                          <div className="col-check">
+                            <input
+                              type="checkbox"
+                              checked={selectedPassengerIds.includes(p.id)}
+                              disabled={!!p.isDefault}
+                              onChange={() => {
+                                if (p.isDefault) return;
+                                setSelectedPassengerIds(prev => (
+                                  prev.includes(p.id) ? prev.filter(id => id !== p.id) : [...prev, p.id]
+                                ));
+                              }}
+                            />
+                          </div>
+                          <div className="col-index">{idx + 1}</div>
+                          <div className="col-name">{p.name}</div>
+                          <div className="col-idtype">{formatIdType(p.idType)}</div>
+                          <div className="col-idnumber">{maskIdNumber(p.idCard)}</div>
+                          <div className="col-phone">{maskPhoneNumber(p.phone)}</div>
+                          <div className="col-verify">
+                            <span className="verify-badge" title="已核验">🪪<span className="dot ok" /> 已核验</span>
+                          </div>
+                          <div className="col-actions">
+                            {!p.isDefault && (
+                              <button
+                                className="op-btn delete"
+                                title="删除"
+                                onClick={() => handleDeletePassenger(p.id)}
+                              >🗑</button>
+                            )}
+                            <button
+                              className="op-btn edit"
+                              title="编辑"
+                              onClick={() => handleEditPassenger(p)}
+                            >✎</button>
+                          </div>
+                        </div>
+                      ))}
+
+                      {filtered.length === 0 && (
+                        <div className="empty-state">
+                          <p>未找到乘车人，请调整查询条件或添加乘车人</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -666,6 +1022,16 @@ const ProfilePage: React.FC = () => {
         onEdit={handlePassengerEdit}
         editingPassenger={editingPassenger}
       />
+
+      {/* 页脚（与主页一致的灰色区域）*/}
+      <footer className="footer">
+        <div className="footer-container">
+          <div className="footer-bottom">
+            <p>版权所有©2008-2025 中国铁道科学研究院集团有限公司 技术支持：铁旅科技有限公司</p>
+            <p>公安 京公网安备 11010802038392号 | 京ICP备05020493号-4 | ICP证：京B2-20202537 | 营业执照</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

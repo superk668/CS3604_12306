@@ -6,6 +6,7 @@ export interface Passenger {
   idCard: string;
   phone: string;
   passengerType: '成人' | '儿童' | '学生';
+  idType?: string; // '1' | '2' | '3'
   isDefault?: boolean;
 }
 

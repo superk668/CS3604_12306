@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../services/auth';
 import { useAuth } from '../contexts/AuthContext';
 import './Register.css';
+import '../pages/HomePage.css';
+import Footer from './Footer';
 
 interface RegisterFormData {
   username: string;
@@ -25,7 +27,7 @@ interface RegisterProps {
 
 const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { user, isLoggedIn, login, logout } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<RegisterFormData>({
     username: '',
@@ -156,7 +158,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
     const newErrors: {[key: string]: string} = {};
 
     if (currentStep === 1) {
-      // 验证账户信息
+      // 验证账户信息（含个人信息）
       if (!formData.username.trim()) {
         newErrors.username = '请输入用户名';
       } else if (!validateUsername(formData.username)) {
@@ -174,8 +176,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
       } else if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = '两次输入的密码不一致';
       }
-    } else if (currentStep === 2) {
-      // 验证个人信息
+      // 个人信息校验
       if (!formData.realName.trim()) {
         newErrors.realName = '请输入真实姓名';
       }
@@ -197,14 +198,14 @@ const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
       } else if (!validatePhoneNumber(formData.phoneNumber)) {
         newErrors.phoneNumber = '手机号码格式不正确';
       }
-    } else if (currentStep === 3) {
-      // 验证手机验证码
-      if (!formData.phoneVerificationCode.trim()) {
-        newErrors.phoneVerificationCode = '请输入手机验证码';
-      }
 
       if (!formData.agreementAccepted) {
         newErrors.agreementAccepted = '请阅读并同意服务条款';
+      }
+    } else if (currentStep === 2) {
+      // 验证手机验证码
+      if (!formData.phoneVerificationCode.trim()) {
+        newErrors.phoneVerificationCode = '请输入手机验证码';
       }
     }
 
@@ -273,183 +274,267 @@ const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
 
   return (
     <div className="register-container">
-      <div className="register-header">
-        <div className="register-logo">
-          <img src="/logo.png" alt="12306" />
-          <span>中国铁路12306</span>
+      {/* 顶部：与首页一致的 Header */}
+      <header className="header">
+        <div className="header-container header-top">
+          <div className="brand">
+            <img className="brand-logo" src="/logo-12306.svg" alt="中国铁路12306" />
+            <div className="brand-text">
+              <div className="brand-title">中国铁路12306</div>
+              <div className="brand-subtitle">12306 CHINA RAILWAY</div>
+            </div>
+          </div>
+
+          <div className="header-search">
+            <input className="search-input" type="text" placeholder="搜索车票、 餐饮、 常旅客、 相关规章" />
+            <button className="search-button">Q</button>
+          </div>
+
+          <div className="header-links">
+            <a href="#" className="link">无障碍</a>
+            <span className="sep">|</span>
+            <a href="#" className="link">敬老版</a>
+            <span className="sep">|</span>
+            <a href="#" className="link">English</a>
+            <span className="sep">|</span>
+            <button className="link-btn" onClick={() => { if (isLoggedIn) { navigate('/profile'); } else { navigate('/login'); } }}>我的12306</button>
+            <span className="sep">|</span>
+            {isLoggedIn ? (
+              <button className="link-btn" onClick={async () => { if (window.confirm('确定要退出登录吗？')) { await logout(); window.location.reload(); } }}>退出</button>
+            ) : (
+              <>
+                <button className="link-btn" onClick={() => navigate('/login')}>登录</button>
+                <span className="space" />
+                <button className="link-btn" onClick={() => navigate('/register')}>注册</button>
+              </>
+            )}
+          </div>
         </div>
-        <nav className="register-nav">
-          <a href="/">首页</a>
-          <button onClick={onNavigateToLogin} className="login-link">登录</button>
-        </nav>
-      </div>
+      </header>
+
+      {/* 导航栏：与首页一致 */}
+      <nav className="navbar">
+        <div className="nav-container">
+          <ul className="nav-links">
+            <li><a href="/" className="active">首页</a></li>
+            <li><a href="/train-list">车票</a></li>
+            <li><a href="#">团购服务</a></li>
+            <li><a href="#">会员服务</a></li>
+            <li><a href="#">站车服务</a></li>
+            <li><a href="#">商旅服务</a></li>
+            <li><a href="#">出行指南</a></li>
+            <li><a href="#">信息查询</a></li>
+          </ul>
+        </div>
+      </nav>
 
       <div className="register-main">
         <div className="register-form-container">
-          <div className="register-form-header">
-            <h2>用户注册</h2>
-            <div className="step-indicator">
-              <div className={`step ${currentStep >= 1 ? 'active' : ''} ${currentStep > 1 ? 'completed' : ''}`}>
-                <span className="step-number">1</span>
-                <span className="step-label">账户信息</span>
-              </div>
-              <div className={`step ${currentStep >= 2 ? 'active' : ''} ${currentStep > 2 ? 'completed' : ''}`}>
-                <span className="step-number">2</span>
-                <span className="step-label">个人信息</span>
-              </div>
-              <div className={`step ${currentStep >= 3 ? 'active' : ''} ${currentStep > 3 ? 'completed' : ''}`}>
-                <span className="step-number">3</span>
-                <span className="step-label">验证完成</span>
-              </div>
-            </div>
-          </div>
 
           <div className="register-form">
             {currentStep === 1 && (
               <div className="step-content">
-                <h3>设置账户信息</h3>
-                
-                <div className="form-group">
-                  <label htmlFor="username">用户名 *</label>
-                  <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    placeholder="6-30位字母、数字或'_'，字母开头"
-                    className={errors.username ? 'error' : ''}
-                  />
-                  {errors.username && <span className="error-message">{errors.username}</span>}
-                </div>
+                <h3>账户信息</h3>
+                <div className="register-form-grid">
+                  {/* 用户名 */}
+                  <div className="grid-row">
+                    <label className="grid-label"><span className="required-star">*</span> 用 户 名：</label>
+                    <div className="grid-input">
+                      <input
+                        type="text"
+                        id="username"
+                        name="username"
+                        value={formData.username}
+                        onChange={handleInputChange}
+                        placeholder="6-30位字母、数字或'_'，字母开头"
+                        className={errors.username ? 'error' : ''}
+                      />
+                      {errors.username && <span className="error-message">{errors.username}</span>}
+                    </div>
+                    <div className="grid-hint">6-30位字母、数字或“_”,字母开头</div>
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="password">登录密码 *</label>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="至少6位字符"
-                    className={errors.password ? 'error' : ''}
-                  />
-                  {errors.password && <span className="error-message">{errors.password}</span>}
-                </div>
+                  {/* 登录密码 */}
+                  <div className="grid-row">
+                    <label className="grid-label"><span className="required-star">*</span> 登录密码：</label>
+                    <div className="grid-input">
+                      <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        placeholder="6-20位字母、数字或符号"
+                        className={errors.password ? 'error' : ''}
+                      />
+                      {errors.password && <span className="error-message">{errors.password}</span>}
+                    </div>
+                    <div className="grid-hint">6-20位字母、数字或符号</div>
+                  </div>
 
-                <div className="form-group">
-                  <label htmlFor="confirmPassword">确认密码 *</label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    placeholder="请再次输入密码"
-                    className={errors.confirmPassword ? 'error' : ''}
-                  />
-                  {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+                  {/* 确认密码 */}
+                  <div className="grid-row">
+                    <label className="grid-label"><span className="required-star">*</span> 确认密码：</label>
+                    <div className="grid-input">
+                      <input
+                        type="password"
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        value={formData.confirmPassword}
+                        onChange={handleInputChange}
+                        placeholder="再次输入您的登录密码"
+                        className={errors.confirmPassword ? 'error' : ''}
+                      />
+                      {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+                    </div>
+                    <div className="grid-hint">再次输入您的登录密码</div>
+                  </div>
+
+                  {/* 证件类型 */}
+                  <div className="grid-row">
+                    <label className="grid-label"><span className="required-star">*</span> 证件类型：</label>
+                    <div className="grid-input">
+                      <select
+                        id="idType"
+                        name="idType"
+                        value={formData.idType}
+                        onChange={handleInputChange}
+                      >
+                        {idTypeOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid-hint">居民身份证</div>
+                  </div>
+
+                  {/* 姓名 */}
+                  <div className="grid-row">
+                    <label className="grid-label"><span className="required-star">*</span> 姓 名：</label>
+                    <div className="grid-input">
+                      <input
+                        type="text"
+                        id="realName"
+                        name="realName"
+                        value={formData.realName}
+                        onChange={handleInputChange}
+                        placeholder="请输入姓名"
+                        className={errors.realName ? 'error' : ''}
+                      />
+                      {errors.realName && <span className="error-message">{errors.realName}</span>}
+                    </div>
+                    <div className="grid-hint">
+                      <a className="rule-link" href="#" onClick={(e)=>e.preventDefault()}>姓名填写规则</a>
+                      （用于身份核验，请正确填写）
+                    </div>
+                  </div>
+
+                  {/* 证件号码 */}
+                  <div className="grid-row">
+                    <label className="grid-label"><span className="required-star">*</span> 证件号码：</label>
+                    <div className="grid-input">
+                      <input
+                        type="text"
+                        id="idNumber"
+                        name="idNumber"
+                        value={formData.idNumber}
+                        onChange={handleInputChange}
+                        placeholder="请输入您的证件号码"
+                        className={errors.idNumber ? 'error' : ''}
+                      />
+                      {errors.idNumber && <span className="error-message">{errors.idNumber}</span>}
+                    </div>
+                    <div className="grid-hint">（用于身份核验，请正确填写）</div>
+                  </div>
+
+                  {/* 优惠（待）类型 */}
+                  <div className="grid-row">
+                    <label className="grid-label"><span className="required-star">*</span> 优惠（待）类型：</label>
+                    <div className="grid-input">
+                      <select
+                        id="passengerType"
+                        name="passengerType"
+                        value={formData.passengerType}
+                        onChange={handleInputChange}
+                      >
+                        {passengerTypeOptions.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid-hint">成人</div>
+                  </div>
+
+                  {/* 邮箱 */}
+                  <div className="grid-row">
+                    <label className="grid-label">邮 箱：</label>
+                    <div className="grid-input">
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="请正确填写邮箱地址"
+                        className={errors.email ? 'error' : ''}
+                      />
+                      {errors.email && <span className="error-message">{errors.email}</span>}
+                    </div>
+                    <div className="grid-hint">请正确填写邮箱地址</div>
+                  </div>
+
+                  {/* 手机号码 */}
+                  <div className="grid-row">
+                    <label className="grid-label"><span className="required-star">*</span> 手机号码：</label>
+                    <div className="grid-input">
+                      <div className="phone-row">
+                        <select className="country-select" value={"+86"} onChange={() => {}}>
+                          <option value="+86">+86 中国</option>
+                        </select>
+                        <input
+                          type="tel"
+                          id="phoneNumber"
+                          name="phoneNumber"
+                          value={formData.phoneNumber}
+                          onChange={handleInputChange}
+                          placeholder="手机号码"
+                          className={errors.phoneNumber ? 'error' : ''}
+                        />
+                      </div>
+                      {errors.phoneNumber && <span className="error-message">{errors.phoneNumber}</span>}
+                    </div>
+                    <div className="grid-hint">请正确填写手机号码，稍后将向该手机号码发送短信验证码</div>
+                  </div>
+
+                  {/* 协议 */}
+                  <div className="grid-row agreement-row">
+                    <label className="grid-label"></label>
+                    <div className="grid-input">
+                      <label className="agreement-label">
+                        <input
+                          type="checkbox"
+                          name="agreementAccepted"
+                          checked={formData.agreementAccepted}
+                          onChange={handleInputChange}
+                        />
+                        <span className="checkmark"></span>
+                        我已阅读并同意遵守
+                        <a href="/terms" target="_blank">《中国铁路客户服务中心网站服务条款》</a>
+                        <a href="/privacy" target="_blank">《隐私权政策》</a>
+                      </label>
+                      {errors.agreementAccepted && <span className="error-message">{errors.agreementAccepted}</span>}
+                    </div>
+                    <div className="grid-hint"></div>
+                  </div>
                 </div>
               </div>
             )}
 
             {currentStep === 2 && (
-              <div className="step-content">
-                <h3>填写个人信息</h3>
-                
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="idType">证件类型 *</label>
-                    <select
-                      id="idType"
-                      name="idType"
-                      value={formData.idType}
-                      onChange={handleInputChange}
-                    >
-                      {idTypeOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label htmlFor="passengerType">旅客类型 *</label>
-                    <select
-                      id="passengerType"
-                      name="passengerType"
-                      value={formData.passengerType}
-                      onChange={handleInputChange}
-                    >
-                      {passengerTypeOptions.map(option => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="realName">姓名 *</label>
-                  <input
-                    type="text"
-                    id="realName"
-                    name="realName"
-                    value={formData.realName}
-                    onChange={handleInputChange}
-                    placeholder="请输入证件上的中文姓名"
-                    className={errors.realName ? 'error' : ''}
-                  />
-                  {errors.realName && <span className="error-message">{errors.realName}</span>}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="idNumber">证件号码 *</label>
-                  <input
-                    type="text"
-                    id="idNumber"
-                    name="idNumber"
-                    value={formData.idNumber}
-                    onChange={handleInputChange}
-                    placeholder="请输入证件号码"
-                    className={errors.idNumber ? 'error' : ''}
-                  />
-                  {errors.idNumber && <span className="error-message">{errors.idNumber}</span>}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="email">邮箱 *</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="请输入邮箱地址"
-                    className={errors.email ? 'error' : ''}
-                  />
-                  {errors.email && <span className="error-message">{errors.email}</span>}
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="phoneNumber">手机号码 *</label>
-                  <input
-                    type="tel"
-                    id="phoneNumber"
-                    name="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={handleInputChange}
-                    placeholder="请输入11位手机号码"
-                    className={errors.phoneNumber ? 'error' : ''}
-                  />
-                  {errors.phoneNumber && <span className="error-message">{errors.phoneNumber}</span>}
-                </div>
-              </div>
-            )}
-
-            {currentStep === 3 && (
               <div className="step-content">
                 <h3>手机验证</h3>
                 
@@ -481,25 +566,10 @@ const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                   </div>
                   {errors.phoneVerificationCode && <span className="error-message">{errors.phoneVerificationCode}</span>}
                 </div>
-
-                <div className="agreement-section">
-                  <label className="agreement-label">
-                    <input
-                      type="checkbox"
-                      name="agreementAccepted"
-                      checked={formData.agreementAccepted}
-                      onChange={handleInputChange}
-                    />
-                    <span className="checkmark"></span>
-                    我已阅读并同意
-                    <a href="/terms" target="_blank">《12306用户服务条款》</a>
-                    和
-                    <a href="/privacy" target="_blank">《隐私政策》</a>
-                  </label>
-                  {errors.agreementAccepted && <span className="error-message">{errors.agreementAccepted}</span>}
-                </div>
               </div>
             )}
+
+            {/* 两步流程，移除原第3步内容 */}
 
             <div className="form-actions">
               {currentStep > 1 && (
@@ -512,7 +582,7 @@ const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
                 </button>
               )}
               
-              {currentStep < 3 ? (
+              {currentStep < 2 ? (
                 <button
                   type="button"
                   onClick={handleNextStep}
@@ -534,48 +604,10 @@ const Register: React.FC<RegisterProps> = ({ onNavigateToLogin }) => {
           </div>
         </div>
 
-        <div className="register-info">
-          <div className="info-section">
-            <h3>注册须知</h3>
-            <ul>
-              <li>请使用真实姓名和证件信息注册，以便正常购票和乘车</li>
-              <li>一个证件号码只能注册一个12306账户</li>
-              <li>注册信息一经提交，证件信息不可修改</li>
-              <li>请妥善保管您的账户信息，避免泄露</li>
-            </ul>
-          </div>
-
-          <div className="info-section">
-            <h3>安全保障</h3>
-            <div className="security-features">
-              <div className="security-item">
-                <span className="security-icon">🔐</span>
-                <span>实名认证</span>
-              </div>
-              <div className="security-item">
-                <span className="security-icon">📱</span>
-                <span>手机验证</span>
-              </div>
-              <div className="security-item">
-                <span className="security-icon">🛡️</span>
-                <span>信息加密</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* 移除右侧信息区块 */}
       </div>
 
-      <div className="register-footer">
-        <div className="footer-links">
-          <a href="/about">关于我们</a>
-          <a href="/privacy">隐私政策</a>
-          <a href="/terms">服务条款</a>
-          <a href="/contact">联系我们</a>
-        </div>
-        <p className="copyright">
-          © 2024 中国铁路客户服务中心 版权所有
-        </p>
-      </div>
+      <Footer />
     </div>
   );
 };

@@ -93,7 +93,7 @@ const register = async (req, res) => {
     });
 
     // 为新用户创建默认乘车人（自己）
-    await createDefaultPassenger(newUser);
+    await createDefaultPassenger(newUser.id, newUser);
 
     // 生成JWT token
     const token = generateToken({

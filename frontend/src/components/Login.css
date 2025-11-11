@@ -14,6 +14,13 @@
   height: 80px;
   background: #fff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+}
+
+.login-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
 .login-logo {
@@ -31,6 +38,17 @@
   font-size: 20px;
   font-weight: bold;
   color: #1890ff;
+}
+
+/* 复用首页品牌文字风格 */
+.brand-text { display: flex; flex-direction: column; line-height: 1; }
+.brand-title { font-size: 22px; font-weight: 700; color: #333; }
+.brand-subtitle { font-size: 12px; color: #999; margin-top: 4px; letter-spacing: .5px; }
+
+.login-welcome {
+  font-size: 18px;
+  color: #333;
+  font-weight: 500;
 }
 
 .login-nav {
@@ -90,7 +108,7 @@
 }
 
 .form-group {
-  margin-bottom: 24px;
+  margin-bottom: 0px;
 }
 
 .form-group label {
@@ -251,11 +269,17 @@
 /* 表单链接 */
 .form-links {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-wrap: nowrap;
+  gap: 8px;
 }
+.form-links .sep { color: #ccc; margin: 0 6px; }
+
+/* 表单下方分割线与服务说明 */
+.form-extra { margin-top: 6px; }
+.form-divider { border-top: 1px solid #eee; margin: 6px 0 6px; }
+.service-notice { color: #666; font-size: 12px; line-height: 1.6; text-align: center; }
 
 .form-links a {
   color: #1890ff;
@@ -276,6 +300,8 @@
   cursor: pointer;
   text-decoration: underline;
   transition: color 0.3s;
+  position: relative;
+  top: -15px;
 }
 
 .register-link:hover {
@@ -345,10 +371,26 @@
 
 /* 底部样式 */
 .login-footer {
-  background: #fff;
-  padding: 24px 40px;
+  background-color: #333;
+  color: #fff;
+  padding: 40px 0 20px;
   text-align: center;
-  border-top: 1px solid #f0f0f0;
+  margin-top: 60px;
+}
+
+/* 与首页一致的底部文案布局 */
+.login-footer .footer-bottom {
+  border-top: 1px solid #555;
+  padding-top: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.login-footer .footer-bottom p {
+  margin: 5px 0;
+  color: #ccc;
+  font-size: 14px;
 }
 
 .footer-links {
@@ -360,20 +402,97 @@
 }
 
 .footer-links a {
-  color: #666;
+  color: #ccc;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 14px;
   transition: color 0.3s;
 }
 
 .footer-links a:hover {
-  color: #1890ff;
+  color: #fff;
 }
 
 .copyright {
   color: #999;
   font-size: 12px;
   margin: 0;
+}
+
+/* 新布局：轮播与右侧叠加登录栏 */
+.login-hero {
+  position: relative;
+  width: 100%;
+}
+
+/* 复用 Carousel 组件，但在登录页提升高度并覆盖缩放 */
+.login-hero .hero-carousel {
+  width: 100%;
+  height: 550px;
+  overflow: hidden;
+}
+.login-hero .hero-carousel img {
+  object-fit: cover;
+  transform: none; /* 覆盖首页的 scaleX(2) */
+}
+
+/* 右侧叠加登录面板 */
+.login-panel {
+  position: absolute;
+  right: 40px;
+  top: 36px;
+  width: 360px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+  border-radius: 8px;
+  padding: 20px 20px 16px;
+}
+
+.login-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+.login-tab {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  color: #666;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.login-tab.active { color: #2a78f6; font-weight: 600; }
+.tab-sep { color: #ccc; }
+
+.login-card .login-form-header { text-align: center; margin-bottom: 12px; }
+.login-card .login-form-header h2 { font-size: 18px; margin: 0 0 4px; }
+.login-card .login-form-header p { color: #888; font-size: 13px; margin: 0; }
+
+/* 扫码登录 */
+.qr-login { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.qr-code-box {
+  width: 216px;
+  height: 216px;
+  background: repeating-linear-gradient(45deg,#e9eef6 0,#e9eef6 8px,#f5f7fb 8px,#f5f7fb 16px);
+  border: 1px solid #ccd6e3;
+  border-radius: 8px;
+  margin: 8px 0 12px;
+}
+.qr-tip { color: #555; font-size: 14px; }
+.qr-app { color: #2a78f6; font-weight: 600; }
+.qr-register { margin-top: 8px; background: transparent; border: none; color: #2a78f6; cursor: pointer; }
+.qr-features { display: flex; gap: 12px; color: #888; font-size: 13px; margin-top: 10px; }
+
+/* 服务时间与说明 */
+.login-notice {
+  width: 100%;
+  max-width: 980px;
+  margin: 12px auto 0;
+  color: #666;
+  font-size: 13px;
 }
 
 /* 响应式设计 */

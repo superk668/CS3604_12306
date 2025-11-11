@@ -22,6 +22,7 @@ const getPassengers = async (req, res) => {
         idCard: passenger.id_number,
         phone: passenger.phone,
         passengerType: passenger.passenger_type,
+        idType: passenger.id_type,
         isDefault: passenger.is_default
       }))
     });
@@ -84,6 +85,7 @@ const addPassenger = async (req, res) => {
         idCard: passenger.id_number,
         phone: passenger.phone,
         passengerType: passenger.passenger_type,
+        idType: passenger.id_type,
         isDefault: passenger.is_default
       }
     });
@@ -164,6 +166,7 @@ const updatePassenger = async (req, res) => {
         idCard: passenger.id_number,
         phone: passenger.phone,
         passengerType: passenger.passenger_type,
+        idType: passenger.id_type,
         isDefault: passenger.is_default
       }
     });
@@ -228,6 +231,7 @@ const createDefaultPassenger = async (userId, userData) => {
     await Passenger.create({
       user_id: userId,
       name: userData.real_name,
+      id_type: userData.id_type || '1',
       id_number: userData.id_number,
       phone: userData.phone_number,
       passenger_type: userData.passenger_type === '1' ? '成人' : '儿童',

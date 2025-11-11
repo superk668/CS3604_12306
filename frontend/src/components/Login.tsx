@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../services/auth';
 import { useAuth } from '../contexts/AuthContext';
 import './Login.css';
+import Carousel from './Carousel';
 
 interface LoginFormData {
   username: string;
   password: string;
-  captcha: string;
   rememberUsername: boolean;
   autoLogin: boolean;
 }
@@ -20,16 +20,15 @@ interface LoginProps {
 const Login: React.FC<LoginProps> = ({ onNavigateToRegister }) => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [activeLoginTab, setActiveLoginTab] = useState<'account' | 'qr'>('account');
   const [formData, setFormData] = useState<LoginFormData>({
     username: '',
     password: '',
-    captcha: '',
     rememberUsername: false,
     autoLogin: false
   });
 
   const [errors, setErrors] = useState<Partial<LoginFormData>>({});
-  const [captchaImage, setCaptchaImage] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
 
   // 验证用户名格式
@@ -61,12 +60,6 @@ const Login: React.FC<LoginProps> = ({ onNavigateToRegister }) => {
     }
   };
 
-  // 刷新验证码
-  const refreshCaptcha = () => {
-    // 模拟验证码刷新
-    const timestamp = new Date().getTime();
-    setCaptchaImage(`https://kyfw.12306.cn/passport/captcha/captcha-image?login_site=E&module=login&rand=sjrand&${timestamp}`);
-  };
 
   // 表单验证
   const validateForm = (): boolean => {
@@ -84,9 +77,7 @@ const Login: React.FC<LoginProps> = ({ onNavigateToRegister }) => {
       newErrors.password = '密码至少6位字符';
     }
 
-    if (!formData.captcha.trim()) {
-      newErrors.captcha = '请输入验证码';
-    }
+    // 已移除验证码校验
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -135,183 +126,137 @@ const Login: React.FC<LoginProps> = ({ onNavigateToRegister }) => {
     }
   };
 
-  // 初始化验证码
-  React.useEffect(() => {
-    refreshCaptcha();
-  }, []);
+  // 已移除验证码初始化
+
+  // 登录页轮播图片（两张）
+  const loginCarouselItems = [
+    { id: 1, image: '/homepage/Carousel/Carousel_1.png', title: '登录轮播一' },
+    { id: 2, image: '/homepage/Carousel/Carousel_2.png', title: '登录轮播二' }
+  ];
 
   return (
     <div className="login-container">
       <div className="login-header">
-        <div className="login-logo">
-          <img src="/logo.png" alt="12306" />
-          <span>中国铁路12306</span>
+        <div className="login-left">
+          <div className="login-logo">
+            <img src="/logo-12306.svg" alt="12306" />
+            <div className="brand-text">
+              <div className="brand-title">中国铁路12306</div>
+              <div className="brand-subtitle">12306 CHINA RAILWAY</div>
+            </div>
+          </div>
+          <div className="login-welcome">欢迎登录12306</div>
         </div>
-        <nav className="login-nav">
-          <a href="/">首页</a>
-          <a href="/help">帮助中心</a>
-        </nav>
       </div>
 
-      <div className="login-main">
-        <div className="login-form-container">
-          <div className="login-form-header">
-            <h2>用户登录</h2>
-            <p>登录12306账户，享受便捷购票服务</p>
+      {/* 轮播与右侧叠加登录卡 */}
+      <div className="login-hero">
+        <Carousel items={loginCarouselItems} autoPlay={true} interval={5000} />
+
+        <div className="login-panel">
+          <div className="login-tabs">
+            <button
+              className={`login-tab ${activeLoginTab === 'account' ? 'active' : ''}`}
+              onClick={() => setActiveLoginTab('account')}
+            >
+              账户登录
+            </button>
+            <span className="tab-sep">|</span>
+            <button
+              className={`login-tab ${activeLoginTab === 'qr' ? 'active' : ''}`}
+              onClick={() => setActiveLoginTab('qr')}
+            >
+              扫码登录
+            </button>
           </div>
 
-          <form className="login-form" onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="username">用户名/邮箱</label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                onChange={handleInputChange}
-                placeholder="请输入用户名或邮箱"
-                className={errors.username ? 'error' : ''}
-              />
-              {errors.username && <span className="error-message">{errors.username}</span>}
-            </div>
+          {activeLoginTab === 'account' ? (
+            <div className="login-card">
+              <form className="login-form" onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    placeholder="请输入用户名或邮箱"
+                    className={errors.username ? 'error' : ''}
+                  />
+                  {errors.username && <span className="error-message">{errors.username}</span>}
+                </div>
 
-            <div className="form-group">
-              <label htmlFor="password">密码</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="请输入密码"
-                className={errors.password ? 'error' : ''}
-              />
-              {errors.password && <span className="error-message">{errors.password}</span>}
-            </div>
+                <div className="form-group">
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="请输入密码"
+                    className={errors.password ? 'error' : ''}
+                  />
+                  {errors.password && <span className="error-message">{errors.password}</span>}
+                </div>
 
-            <div className="form-group captcha-group">
-              <label htmlFor="captcha">验证码</label>
-              <div className="captcha-container">
-                <input
-                  type="text"
-                  id="captcha"
-                  name="captcha"
-                  value={formData.captcha}
-                  onChange={handleInputChange}
-                  placeholder="请输入验证码"
-                  className={errors.captcha ? 'error' : ''}
-                />
-                <div className="captcha-image-container">
-                  {captchaImage ? (
-                    <img 
-                      src={captchaImage} 
-                      alt="验证码" 
-                      onClick={refreshCaptcha}
-                      className="captcha-image"
-                    />
-                  ) : (
-                    <div className="captcha-placeholder" onClick={refreshCaptcha}>
-                      点击获取验证码
-                    </div>
-                  )}
+                
+
+                
+
+                <button 
+                  type="submit" 
+                  className="login-button"
+                  disabled={isLoading}
+                >
+                  {isLoading ? '登录中...' : '立即登录'}
+                </button>
+
+                <div className="form-links">
+                  <a href="/forgot-password">忘记密码？</a>
+                  <span className="sep">|</span>
                   <button 
                     type="button" 
-                    onClick={refreshCaptcha}
-                    className="refresh-captcha"
+                    onClick={onNavigateToRegister}
+                    className="register-link"
                   >
-                    刷新
+                    注册12306账号
                   </button>
                 </div>
-              </div>
-              {errors.captcha && <span className="error-message">{errors.captcha}</span>}
+
+                <div className="form-extra">
+                  <div className="form-divider" />
+                  <p className="service-notice">铁路12306每日5:00至次日1:00（周二为5:00至24:00）提供购票、改签、变更到站业务办理， 全天均可办理退票等其他服务。</p>
+                </div>
+              </form>
             </div>
-
-            <div className="form-options">
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="rememberUsername"
-                  checked={formData.rememberUsername}
-                  onChange={handleInputChange}
-                />
-                <span className="checkmark"></span>
-                记住用户名
-              </label>
-              <label className="checkbox-label">
-                <input
-                  type="checkbox"
-                  name="autoLogin"
-                  checked={formData.autoLogin}
-                  onChange={handleInputChange}
-                />
-                <span className="checkmark"></span>
-                自动登录
-              </label>
-            </div>
-
-            <button 
-              type="submit" 
-              className="login-button"
-              disabled={isLoading}
-            >
-              {isLoading ? '登录中...' : '登录'}
-            </button>
-
-            <div className="form-links">
-              <a href="/forgot-username">忘记用户名？</a>
-              <a href="/forgot-password">忘记密码？</a>
+          ) : (
+            <div className="qr-login">
+              <div className="qr-code-box" aria-label="扫码登录二维码占位"></div>
+              <p className="qr-tip">打开<span className="qr-app">12306</span>手机APP 扫描二维码</p>
               <button 
                 type="button" 
                 onClick={onNavigateToRegister}
-                className="register-link"
+                className="qr-register"
               >
-                立即注册
+                注册12306账号
               </button>
-            </div>
-          </form>
-        </div>
-
-        <div className="login-info">
-          <div className="info-section">
-            <h3>温馨提示</h3>
-            <ul>
-              <li>为了您的账户安全，请不要在网吧等公共场所登录</li>
-              <li>如果您忘记了用户名或密码，可以通过邮箱或手机号找回</li>
-              <li>建议您定期修改密码，提高账户安全性</li>
-              <li>登录遇到问题？请联系客服：12306</li>
-            </ul>
-          </div>
-
-          <div className="info-section">
-            <h3>安全登录</h3>
-            <div className="security-features">
-              <div className="security-item">
-                <span className="security-icon">🔒</span>
-                <span>SSL加密传输</span>
-              </div>
-              <div className="security-item">
-                <span className="security-icon">🛡️</span>
-                <span>多重安全验证</span>
-              </div>
-              <div className="security-item">
-                <span className="security-icon">📱</span>
-                <span>手机短信验证</span>
+              <div className="qr-features">
+                <div className="qr-feature">扫一扫登录</div>
+                <div className="qr-feature">更快</div>
+                <div className="qr-feature">更安全</div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
+      {/* 已将服务时间说明移动至表单下方 */}
+
       <div className="login-footer">
-        <div className="footer-links">
-          <a href="/about">关于我们</a>
-          <a href="/privacy">隐私政策</a>
-          <a href="/terms">服务条款</a>
-          <a href="/contact">联系我们</a>
+        <div className="footer-bottom">
+          <p>版权所有©2008-2025 中国铁道科学研究院集团有限公司 技术支持：铁旅科技有限公司</p>
+          <p>中国国家铁路集团有限公司 京公网安备 11010802038392号 | 京ICP备05020493号-4 | ICP证：京B2-20202537</p>
         </div>
-        <p className="copyright">
-          © 2024 中国铁路客户服务中心 版权所有
-        </p>
       </div>
     </div>
   );
