@@ -23,9 +23,9 @@ const HomePage: React.FC = () => {
   const { user, isLoggedIn, logout } = useAuth();
 
   const carouselItems: CarouselItem[] = [
-    { id: 1, image: '/homepage/Carousel/Carousel_1.png', title: '轮播一' },
-    { id: 2, image: '/homepage/Carousel/Carousel_2.png', title: '轮播二' },
-    { id: 3, image: '/homepage/Carousel/Carousel_3.png', title: '轮播三' },
+    { id: 1, image: '/homepage/Carousel/Carousel_1.jpg', title: '轮播一' },
+    { id: 2, image: '/homepage/Carousel/Carousel_2.jpg', title: '轮播二' },
+    { id: 3, image: '/homepage/Carousel/Carousel_3.jpg', title: '轮播三' },
     { id: 4, image: '/homepage/Carousel/Carousel_4.jpg', title: '轮播四' },
     { id: 5, image: '/homepage/Carousel/Carousel_5.jpg', title: '轮播五' },
     { id: 6, image: '/homepage/Carousel/Carousel_6.jpg', title: '轮播六' },
@@ -172,36 +172,21 @@ const HomePage: React.FC = () => {
         <button type="button" className="hero-service-btn" aria-label="用户反馈">用户反馈</button>
       </div>
 
-      {/* 服务区下方：2×2 图文按钮区域 */}
+      {/* 服务区下方：2×2 图片区域 */}
       <section className="promo-section" aria-label="图文服务入口">
         <div className="promo-grid">
-          <a className="promo-card promo-bg-1" href="#" role="button" aria-label="会员服务">
-            <div className="promo-content">
-              <h3>会员服务</h3>
-              <p>铁路畅行 尊享体验 12306铁路会员积分服务</p>
-            </div>
-          </a>
-
-          <a className="promo-card promo-bg-2" href="#" role="button" aria-label="餐饮·特产">
-            <div className="promo-content">
-              <h3>餐饮·特产</h3>
-              <p>带有温度的旅途配餐 享受星级的体验和家乡的味道</p>
-            </div>
-          </a>
-
-          <a className="promo-card promo-bg-3" href="#" role="button" aria-label="铁路保险">
-            <div className="promo-content">
-              <h3>铁路保险</h3>
-              <p>用心呵护 放心出行 12306铁路保障出行安全</p>
-            </div>
-          </a>
-
-          <a className="promo-card promo-bg-4" href="#" role="button" aria-label="计次·定期票">
-            <div className="promo-content">
-              <h3>计次·定期票</h3>
-              <p>预约随心乘 出行更便捷 为您提供全新的自助式出行体验</p>
-            </div>
-          </a>
+          <div className="promo-card promo-image-card">
+            <img src="/homepage/service/abanner01.jpg" alt="服务宣传图一" loading="lazy" />
+          </div>
+          <div className="promo-card promo-image-card">
+            <img src="/homepage/service/abanner02.jpg" alt="服务宣传图二" loading="lazy" />
+          </div>
+          <div className="promo-card promo-image-card">
+            <img src="/homepage/service/abanner03.jpg" alt="服务宣传图三" loading="lazy" />
+          </div>
+          <div className="promo-card promo-image-card">
+            <img src="/homepage/service/abanner04.jpg" alt="服务宣传图四" loading="lazy" />
+          </div>
         </div>
       </section>
 

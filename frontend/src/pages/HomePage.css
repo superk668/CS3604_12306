@@ -563,6 +563,20 @@ section.carousel-section {
   background: linear-gradient(90deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.35) 45%, rgba(255,255,255,0.1) 70%, rgba(255,255,255,0) 100%);
 }
 
+/* 纯图片卡片：禁用叠加层，图片满铺裁剪 */
+.promo-image-card {
+  background: transparent;
+}
+.promo-image-card::after {
+  content: none;
+}
+.promo-image-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .promo-content {
   position: absolute;
   z-index: 1;
