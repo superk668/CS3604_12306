@@ -1121,16 +1121,16 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
       </footer>
-    </div>
 
-    {paymentOrderData && (
-      <PaymentModal
-        isOpen={isPaymentModalOpen}
-        onClose={handlePaymentClose}
-        onPaymentSuccess={handlePaymentSuccess}
-        orderData={paymentOrderData}
-      />
-    )}
+      {paymentOrderData && (
+        <PaymentModal
+          isOpen={isPaymentModalOpen}
+          onClose={handlePaymentClose}
+          onPaymentSuccess={handlePaymentSuccess}
+          orderData={paymentOrderData}
+        />
+      )}
+    </div>
   );
 };
 
