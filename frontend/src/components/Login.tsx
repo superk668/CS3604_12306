@@ -147,7 +147,7 @@ const Login: React.FC<LoginProps> = ({ onNavigateToRegister }) => {
       <div className="login-header">
         <div className="login-left">
           <div className="login-logo">
-            <img src="/logo-12306.svg" alt="12306" />
+            <img src="/铁路12306-512x512.png" alt="12306" />
             <div className="brand-text">
               <div className="brand-title">中国铁路12306</div>
               <div className="brand-subtitle">12306 CHINA RAILWAY</div>

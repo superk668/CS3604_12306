@@ -202,7 +202,7 @@ const Register: React.FC<RegisterProps> = () => {
       <header className="header">
         <div className="header-container header-top">
           <div className="brand">
-            <img className="brand-logo" src="/logo-12306.svg" alt="中国铁路12306" />
+            <img className="brand-logo" src="/铁路12306-512x512.png" alt="中国铁路12306" />
             <div className="brand-text">
               <div className="brand-title">中国铁路12306</div>
               <div className="brand-subtitle">12306 CHINA RAILWAY</div>

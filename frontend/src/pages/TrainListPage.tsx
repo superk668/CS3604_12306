@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import SearchConditions from '../components/SearchConditions';
+import { parseCityStationInput } from '../utils/cityStationMap';
 import FilterConditions from '../components/FilterConditions';
 import TrainList from '../components/TrainList';
 import LoginModal from '../components/LoginModal';
@@ -115,7 +116,25 @@ const TrainListPage: React.FC = () => {
       try {
         const { searchTrains } = await import('../services/trainService');
         
-        // 如果有城市级别的车站筛选，使用多车站查询
+        // 智能解析：如果首页传入的是城市名，展开为城市内所有车站
+        let effectiveFromStations = fromStations;
+        let effectiveToStations = toStations;
+
+        if (effectiveFromStations.length === 0) {
+          const parsed = parseCityStationInput(fromStation);
+          if (parsed.isCity && parsed.stations.length > 0) {
+            effectiveFromStations = parsed.stations;
+            setFromStations(parsed.stations);
+          }
+        }
+        if (effectiveToStations.length === 0) {
+          const parsed = parseCityStationInput(toStation);
+          if (parsed.isCity && parsed.stations.length > 0) {
+            effectiveToStations = parsed.stations;
+            setToStations(parsed.stations);
+          }
+        }
+
         const searchParams: any = {
           fromStation,
           toStation,
@@ -123,11 +142,11 @@ const TrainListPage: React.FC = () => {
         };
         
         // 如果有多车站筛选，添加到查询参数
-        if (fromStations.length > 0) {
-          searchParams.fromStations = fromStations;
+        if (effectiveFromStations.length > 0) {
+          searchParams.fromStations = effectiveFromStations;
         }
-        if (toStations.length > 0) {
-          searchParams.toStations = toStations;
+        if (effectiveToStations.length > 0) {
+          searchParams.toStations = effectiveToStations;
         }
         
         const list = await searchTrains(searchParams);
@@ -283,7 +302,7 @@ const TrainListPage: React.FC = () => {
         <div className="header-container header-top">
           {/* 左侧：Logo与标题 */}
           <div className="brand">
-            <img className="brand-logo" src="/logo-12306.svg" alt="中国铁路12306" />
+            <img className="brand-logo" src="/铁路12306-512x512.png" alt="中国铁路12306" />
             <div className="brand-text">
               <div className="brand-title">中国铁路12306</div>
               <div className="brand-subtitle">12306 CHINA RAILWAY</div>
