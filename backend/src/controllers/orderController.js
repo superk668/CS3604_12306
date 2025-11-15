@@ -320,6 +320,31 @@ const getUserOrders = async (req, res) => {
       offset: parseInt(offset)
     });
 
+    // 动态更新已支付且已发车的订单为已出行
+    const now = new Date();
+    const updates = [];
+    for (const order of orders.rows) {
+      if (order.status === 'paid' && order.departureDate) {
+        try {
+          const depart = new Date(order.departureDate);
+          if (order.departureTime) {
+            const [hh, mm] = String(order.departureTime).split(':');
+            const h = parseInt(hh || '0', 10);
+            const m = parseInt(mm || '0', 10);
+            depart.setHours(h, m, 0, 0);
+          }
+          if (now >= depart) {
+            updates.push(order.update({ status: 'completed' }));
+          }
+        } catch (e) {
+          // 忽略单条解析错误
+        }
+      }
+    }
+    if (updates.length > 0) {
+      await Promise.all(updates);
+    }
+
     res.json({
       success: true,
       data: {

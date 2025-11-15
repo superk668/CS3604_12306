@@ -29,7 +29,7 @@ interface Order {
   passenger: string;
   seat: string;
   price: number;
-  status: 'paid' | 'unpaid' | 'cancelled' | 'refunded';
+  status: 'paid' | 'unpaid' | 'cancelled' | 'refunded' | 'completed';
 }
 
 const ProfilePage: React.FC = () => {
@@ -294,8 +294,9 @@ const ProfilePage: React.FC = () => {
             order.status === 'unpaid' ? 'unpaid' :
             order.status === 'paid' ? 'paid' :
             order.status === 'cancelled' ? 'cancelled' :
-            order.status === 'refunded' ? 'refunded' : 'unpaid'
-          ) as 'paid' | 'unpaid' | 'cancelled' | 'refunded'
+            order.status === 'refunded' ? 'refunded' :
+            order.status === 'completed' ? 'completed' : 'unpaid'
+          ) as 'paid' | 'unpaid' | 'cancelled' | 'refunded' | 'completed'
          }));
         
         setOrders(formattedOrders);
@@ -348,7 +349,8 @@ const ProfilePage: React.FC = () => {
                 order.status === 'unpaid' ? 'unpaid' :
                 order.status === 'paid' ? 'paid' :
                 order.status === 'cancelled' ? 'cancelled' :
-                order.status === 'refunded' ? 'refunded' : 'unpaid'
+                order.status === 'refunded' ? 'refunded' :
+                order.status === 'completed' ? 'completed' : 'unpaid'
               )
             }));
             
@@ -433,7 +435,8 @@ const ProfilePage: React.FC = () => {
       paid: '已支付',
       unpaid: '未支付',
       cancelled: '已取消',
-      refunded: '已退票'
+      refunded: '已退票',
+      completed: '已出行'
     };
     return statusMap[status];
   };
@@ -999,11 +1002,12 @@ const ProfilePage: React.FC = () => {
               </div>
 
               <div className="orders-section">
-                <div className="order-tabs">
-                  <button className={`tab-btn ${orderFilter === 'all' ? 'active' : ''}`} data-testid="orders-tab-all" onClick={() => setOrderFilter('all')}>全部订单</button>
-                  <button className={`tab-btn ${orderFilter === 'unpaid' ? 'active' : ''}`} data-testid="orders-tab-unfinished" onClick={() => setOrderFilter('unpaid')}>未完成订单</button>
-                  <button className={`tab-btn ${orderFilter === 'paid' ? 'active' : ''}`} data-testid="orders-tab-not-travelled" onClick={() => setOrderFilter('paid')}>未出行订单</button>
-                </div>
+              <div className="order-tabs">
+                <button className={`tab-btn ${orderFilter === 'all' ? 'active' : ''}`} data-testid="orders-tab-all" onClick={() => setOrderFilter('all')}>全部订单</button>
+                <button className={`tab-btn ${orderFilter === 'unpaid' ? 'active' : ''}`} data-testid="orders-tab-unfinished" onClick={() => setOrderFilter('unpaid')}>未完成订单</button>
+                <button className={`tab-btn ${orderFilter === 'paid' ? 'active' : ''}`} data-testid="orders-tab-not-travelled" onClick={() => setOrderFilter('paid')}>未出行订单</button>
+                <button className={`tab-btn ${orderFilter === 'completed' ? 'active' : ''}`} data-testid="orders-tab-travelled" onClick={() => setOrderFilter('completed')}>已出行订单</button>
+              </div>
                 <div className="order-filters">
                   <select 
                     className="filter-select"
@@ -1015,6 +1019,7 @@ const ProfilePage: React.FC = () => {
                     <option value="unpaid">未支付</option>
                     <option value="cancelled">已取消</option>
                     <option value="refunded">已退票</option>
+                    <option value="completed">已出行</option>
                   </select>
                   <input 
                     type="date" 
