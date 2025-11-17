@@ -15,7 +15,10 @@ test.describe('订单中心未完成订单去支付', () => {
 
     // 将令牌注入到页面环境中，确保前端能访问订单中心
     await page.goto('/');
-    await page.evaluate((t) => localStorage.setItem('authToken', t), token);
+    // 令牌在上一步已校验，这里声明返回类型为 void、参数类型为 string
+    await page.evaluate<void, string>((t) => {
+      localStorage.setItem('authToken', t);
+    }, token!);
 
     // 预置一笔未支付订单（pending）
     const payload = {
