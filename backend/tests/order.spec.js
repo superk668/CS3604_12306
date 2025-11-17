@@ -1,10 +1,13 @@
 const request = require('supertest');
 const app = require('../src/app');
 const { seedData } = require('../src/scripts/seedData');
+const { testConnection, syncDatabase, sequelize } = require('../src/models');
 
 describe('Order API', () => {
   let token;
   beforeAll(async () => {
+    await testConnection();
+    await syncDatabase(true);
     // 注册并登录
     const username = 'orderuser_' + Date.now();
     const password = 'mypassword';
@@ -77,3 +80,7 @@ describe('Order API', () => {
   });
 });
 jest.setTimeout(60000);
+
+afterAll(async () => {
+  await sequelize.close();
+});

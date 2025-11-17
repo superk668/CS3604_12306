@@ -67,24 +67,4 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, async () => {
-  console.log(`🚄 12306 API Server running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔗 API Base URL: http://localhost:${PORT}${process.env.API_PREFIX || '/api/v1'}`);
-  
-  // 测试数据库连接
-  await testConnection();
-  
-  // 同步数据库表结构（开发/测试环境）
-  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
-    await syncDatabase(false);
-    try {
-      await seedData();
-    } catch (e) {
-      console.error('种子数据初始化失败:', e.message);
-    }
-  }
-});
-
 module.exports = app;

@@ -1,12 +1,19 @@
 const request = require('supertest');
 const app = require('../src/app');
 const { seedData } = require('../src/scripts/seedData');
+const { testConnection, syncDatabase, sequelize } = require('../src/models');
 
 describe('Train API', () => {
-jest.setTimeout(60000);
-beforeAll(async () => {
-  await seedData();
-});
+  jest.setTimeout(60000);
+  beforeAll(async () => {
+    await testConnection();
+    await syncDatabase(true);
+    await seedData();
+  });
+
+  afterAll(async () => {
+    await sequelize.close();
+  });
 
   it('searches trains for 北京南->上海虹桥 on 2025-12-15', async () => {
     const res = await request(app)

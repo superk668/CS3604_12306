@@ -12,7 +12,7 @@ const TrainSeat = sequelize.define('TrainSeat', {
     allowNull: false,
     references: {
       model: 'trains',
-      key: 'trainNumber'
+      key: 'train_number'
     },
     comment: '车次号'
   },

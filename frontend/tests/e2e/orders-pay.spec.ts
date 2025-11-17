@@ -13,6 +13,13 @@ test.describe('订单中心未完成订单去支付', () => {
     }
     if (!token) test.fail(true, '登录接口失败，无法获取令牌');
 
+    // 将令牌注入到页面环境中，确保前端能访问订单中心
+    await page.goto('/');
+    // 令牌在上一步已校验，这里声明返回类型为 void、参数类型为 string
+    await page.evaluate<void, string>((t) => {
+      localStorage.setItem('authToken', t);
+    }, token!);
+
     // 预置一笔未支付订单（pending）
     const payload = {
       trainInfo: {
@@ -49,6 +56,7 @@ test.describe('订单中心未完成订单去支付', () => {
 
     // 进入个人中心 → 订单中心 → 火车票订单
     await page.goto('/profile');
+    await expect(page.locator('.profile-page')).toBeVisible({ timeout: 15000 });
     await page.getByRole('button', { name: '火车票订单' }).click();
 
     // 切换到“未完成订单”标签并等待列表加载
