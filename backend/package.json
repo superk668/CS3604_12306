@@ -4,9 +4,9 @@
   "description": "12306官方网站像素级复刻项目 - 后端API服务",
   "main": "src/app.js",
   "scripts": {
-    "start": "node src/app.js",
-    "dev": "nodemon src/app.js",
-    "test": "jest"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest --runInBand"
   },
   "keywords": [
     "12306",

@@ -1,7 +1,16 @@
 const request = require('supertest');
 const app = require('../src/app');
+const { testConnection, syncDatabase, sequelize } = require('../src/models');
 
 describe('Auth API', () => {
+  beforeAll(async () => {
+    await testConnection();
+    await syncDatabase(true);
+  });
+
+  afterAll(async () => {
+    await sequelize.close();
+  });
   const username = 'testuser_' + Date.now();
   const password = 'mypassword';
   let token;
