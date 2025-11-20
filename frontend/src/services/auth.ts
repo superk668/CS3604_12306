@@ -85,6 +85,26 @@ export const updateProfile = async (payload: { email?: string; phoneNumber?: str
   }
 };
 
+export const sendPhoneCode = async (payload: { countryCode?: string; phoneNumber: string }): Promise<ApiResponse<{ code?: string }>> => {
+  try {
+    const response = await post('/auth/send-code', payload);
+    return response;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '发送验证码失败';
+    throw new Error(message);
+  }
+};
+
+export const verifyPhoneCode = async (payload: { countryCode?: string; phoneNumber: string; code: string }): Promise<ApiResponse<Record<string, never>>> => {
+  try {
+    const response = await post('/auth/verify-code', payload);
+    return response;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '验证码校验失败';
+    throw new Error(message);
+  }
+};
+
 // 用户登出
 export const logoutUser = async (): Promise<void> => {
   try {
