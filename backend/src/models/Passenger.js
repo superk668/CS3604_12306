@@ -39,10 +39,10 @@ const Passenger = sequelize.define('Passenger', {
     comment: '身份证号'
   },
   phone: {
-    type: DataTypes.STRING(11),
+    type: DataTypes.STRING(20),
     allowNull: false,
     validate: {
-      is: /^1[3-9]\d{9}$/
+      is: /^(\+?[1-9]\d{6,14}|1[3-9]\d{9})$/
     },
     comment: '手机号'
   },

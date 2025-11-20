@@ -23,7 +23,14 @@ test.describe('用户认证', () => {
       await dialog.accept();
     });
     await expect(page.getByRole('heading', { name: '手机验证' })).toBeVisible();
-    await page.fill('input[name="phoneVerificationCode"]', '123456');
+    const sendBtn = page.locator('button.send-code-btn');
+    await sendBtn.click();
+    const apiResp = await page.request.post('http://127.0.0.1:3000/api/v1/auth/send-code', {
+      data: { countryCode: '+86', phoneNumber: '13812341234' }
+    });
+    const code = (await apiResp.json()).code;
+    await page.fill('input[name="phoneVerificationCode"]', code || '000000');
+    await page.locator('button.verify-code-btn').click();
     await page.locator('button.submit-btn').click();
 
     await expect(page).toHaveURL(/\/profile$/);

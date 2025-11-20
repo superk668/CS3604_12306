@@ -1,6 +1,9 @@
 const User = require('../models/User');
 const { validateRegisterData, validateUsername, validatePassword, validateEmail, validatePhoneNumber } = require('../utils/validation');
 const { hashPassword, comparePassword, generateToken } = require('../utils/auth');
+
+const verificationStore = new Map();
+const verificationVerified = new Map();
 const { createDefaultPassenger } = require('./passengerController');
 
 // 用户注册
@@ -78,6 +81,18 @@ const register = async (req, res) => {
       });
     }
 
+    // 验证手机号验证码
+    try {
+      const key = `${countryCode || '+86'}:${phoneNumber}`;
+      const v = verificationVerified.get(key);
+      if (!v || (Date.now() - v.verifiedAt) > 10 * 60 * 1000) {
+        return res.status(400).json({ success: false, message: '请先完成手机验证码校验' });
+      }
+      verificationVerified.delete(key);
+    } catch (e) {
+      return res.status(400).json({ success: false, message: '请先完成手机验证码校验' });
+    }
+
     // 密码加密
     const hashedPassword = await hashPassword(password);
 
@@ -94,8 +109,12 @@ const register = async (req, res) => {
       passenger_type: passengerType || '1'
     });
 
-    // 为新用户创建默认乘车人（自己）
-    await createDefaultPassenger(newUser.id, newUser);
+    // 为新用户创建默认乘车人（自己）——失败不阻断注册
+    try {
+      await createDefaultPassenger(newUser.id, newUser);
+    } catch (e) {
+      console.error('创建默认乘车人失败（忽略，不阻断注册）:', e?.message || e);
+    }
 
     // 生成JWT token
     const token = generateToken({
@@ -130,6 +149,30 @@ const register = async (req, res) => {
 
   } catch (error) {
     console.error('注册错误:', error);
+    // 更具体的错误处理（模式参考 orderController）
+    if (error?.name === 'SequelizeUniqueConstraintError') {
+      const field = error?.errors?.[0]?.path || 'unknown';
+      const mapping = {
+        username: '用户名已存在',
+        id_number: '身份证号已存在',
+        phone_number: '手机号已存在'
+      };
+      return res.status(400).json({
+        success: false,
+        message: mapping[field] || '数据约束错误，请检查输入信息',
+        errors: field in mapping ? { [field]: mapping[field] } : undefined
+      });
+    }
+    if (error?.name === 'SequelizeValidationError') {
+      const first = error?.errors?.[0];
+      const message = first?.message || '数据验证失败，请检查输入信息';
+      const field = first?.path;
+      return res.status(400).json({
+        success: false,
+        message,
+        errors: field ? { [field]: message } : undefined
+      });
+    }
     res.status(500).json({
       success: false,
       message: '服务器内部错误',
@@ -317,6 +360,53 @@ module.exports = {
     } catch (error) {
       console.error('更新个人信息错误:', error);
       res.status(500).json({ success: false, message: '服务器内部错误' });
+    }
+  },
+  sendVerificationCode: async (req, res) => {
+    try {
+      const { countryCode, phoneNumber } = req.body || {};
+      if (!phoneNumber) {
+        return res.status(400).json({ success: false, message: '缺少手机号' });
+      }
+      const key = `${countryCode || '+86'}:${phoneNumber}`;
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = Date.now() + 60_000;
+      verificationStore.set(key, { code, expiresAt });
+      const payload = { success: true, message: '验证码已发送', code };
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('验证码发送', { countryCode: countryCode || '+86', phoneNumber, code, expiresAt: new Date(expiresAt).toISOString() });
+      }
+      return res.status(200).json(payload);
+    } catch (e) {
+      return res.status(500).json({ success: false, message: '服务器内部错误' });
+    }
+  },
+  verifyVerificationCode: async (req, res) => {
+    try {
+      const { countryCode, phoneNumber, code } = req.body || {};
+      if (!phoneNumber || !code) {
+        return res.status(400).json({ success: false, message: '缺少参数' });
+      }
+      const key = `${countryCode || '+86'}:${phoneNumber}`;
+      const item = verificationStore.get(key);
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('验证码校验请求', { key, inputCode: code, stored: item ? item.code : null, expiresAt: item ? new Date(item.expiresAt).toISOString() : null });
+      }
+      if (!item) {
+        return res.status(400).json({ success: false, message: '验证码未发送或已过期' });
+      }
+      if (Date.now() > item.expiresAt) {
+        verificationStore.delete(key);
+        return res.status(400).json({ success: false, message: '验证码已过期' });
+      }
+      if (item.code !== code) {
+        return res.status(400).json({ success: false, message: '验证码错误' });
+      }
+      verificationStore.delete(key);
+      verificationVerified.set(key, { verifiedAt: Date.now() });
+      return res.status(200).json({ success: true, message: '验证通过' });
+    } catch (e) {
+      return res.status(500).json({ success: false, message: '服务器内部错误' });
     }
   }
 };

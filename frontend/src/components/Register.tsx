@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerUser } from '../services/auth';
+import { registerUser, sendPhoneCode, verifyPhoneCode, loginUser } from '../services/auth';
 import { useAuth } from '../contexts/AuthContext';
 import './Register.css';
 import '../pages/HomePage.css';
@@ -49,6 +49,7 @@ const Register: React.FC<RegisterProps> = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [verificationCodeSent, setVerificationCodeSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [isVerified, setIsVerified] = useState(false);
 
   // 证件类型选项
   const idTypeOptions = [
@@ -99,10 +100,14 @@ const Register: React.FC<RegisterProps> = () => {
 
     setIsLoading(true);
     try {
-      // 模拟发送验证码
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const resp = await sendPhoneCode({ countryCode: formData.countryCode, phoneNumber: formData.phoneNumber });
+      if (!resp.success) {
+        setErrors(prev => ({ ...prev, phoneNumber: resp.message || '发送验证码失败' }));
+        return;
+      }
       setVerificationCodeSent(true);
       setCountdown(60);
+      setIsVerified(false);
       
       // 倒计时
       const timer = setInterval(() => {
@@ -117,6 +122,33 @@ const Register: React.FC<RegisterProps> = () => {
       
     } catch (error) {
       console.error('发送验证码失败:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (!verificationCodeSent) {
+      setErrors(prev => ({ ...prev, phoneVerificationCode: '请先发送验证码' }));
+      return;
+    }
+    if (!formData.phoneVerificationCode || formData.phoneVerificationCode.length !== 6) {
+      setErrors(prev => ({ ...prev, phoneVerificationCode: '请输入6位验证码' }));
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const resp = await verifyPhoneCode({ countryCode: formData.countryCode, phoneNumber: formData.phoneNumber, code: formData.phoneVerificationCode });
+      if (resp.success) {
+        setIsVerified(true);
+        alert('验证通过');
+      } else {
+        setIsVerified(false);
+        setErrors(prev => ({ ...prev, phoneVerificationCode: resp.message || '验证码输入错误，请重新输入' }));
+      }
+    } catch (e: any) {
+      setIsVerified(false);
+      setErrors(prev => ({ ...prev, phoneVerificationCode: e.message || '验证码校验失败' }));
     } finally {
       setIsLoading(false);
     }
@@ -147,6 +179,23 @@ const Register: React.FC<RegisterProps> = () => {
 
     setIsLoading(true);
     try {
+      const usernamePattern = /^[a-zA-Z][a-zA-Z0-9_ ]*$/;
+      if (!formData.username || formData.username.length < 6 || formData.username.length > 30 || !usernamePattern.test(formData.username)) {
+        setErrors(prev => ({ ...prev, username: '用户名需6-30位，字母开头，仅字母/数字/空格/下划线' }));
+        setIsLoading(false);
+        return;
+      }
+      if (currentStep === 2) {
+        if (!isVerified) {
+          const resp = await verifyPhoneCode({ countryCode: formData.countryCode, phoneNumber: formData.phoneNumber, code: formData.phoneVerificationCode });
+          if (!resp.success) {
+            setErrors(prev => ({ ...prev, phoneVerificationCode: resp.message || '验证码输入错误，请重新输入' }));
+            setIsLoading(false);
+            return;
+          }
+          setIsVerified(true);
+        }
+      }
       const registerData = {
         username: formData.username,
         password: formData.password,
@@ -175,27 +224,37 @@ const Register: React.FC<RegisterProps> = () => {
             newErrors[key] = response.errors![key];
           });
           setErrors(newErrors);
+          const dupUser = newErrors.username || response.message;
+          if (isVerified && dupUser && /用户名已存在|该用户名已被注册/.test(dupUser)) {
+            try {
+              const loginResp = await loginUser({ username: formData.username, password: formData.password });
+              if (loginResp.success) {
+                login(loginResp.data!.user, loginResp.data!.token);
+                alert('账号已存在，已为您登录');
+                navigate('/profile');
+                return;
+              }
+            } catch {}
+          }
         } else {
-          alert(response.message || '注册失败，请重试');
+          const msg = response.message || '';
+          if (isVerified && /用户名已存在|该用户名已被注册/.test(msg)) {
+            try {
+              const loginResp = await loginUser({ username: formData.username, password: formData.password });
+              if (loginResp.success) {
+                login(loginResp.data!.user, loginResp.data!.token);
+                alert('账号已存在，已为您登录');
+                navigate('/profile');
+                return;
+              }
+            } catch {}
+          }
+          alert(msg || '注册失败，请重试');
         }
       }
     } catch (error: any) {
       console.error('注册失败:', error);
-      // 开发环境降级处理：模拟注册成功并自动登录
-      login({
-        id: Date.now(),
-        username: formData.username,
-        realName: formData.realName,
-        idType: formData.idType,
-        idNumber: formData.idNumber,
-        email: formData.email,
-        phoneNumber: formData.phoneNumber,
-        countryCode: formData.countryCode,
-        passengerType: formData.passengerType,
-        status: 'active'
-      } as any, 'dev-mock-token');
-      alert('注册成功！');
-      navigate('/profile');
+      alert(error?.message || '注册失败，请重试');
     } finally {
       setIsLoading(false);
     }
@@ -508,6 +567,14 @@ const Register: React.FC<RegisterProps> = () => {
                       className="send-code-btn"
                     >
                       {countdown > 0 ? `${countdown}s后重发` : verificationCodeSent ? '重新发送' : '发送验证码'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleVerifyCode}
+                      disabled={isLoading || !verificationCodeSent}
+                      className="verify-code-btn"
+                    >
+                      验证
                     </button>
                   </div>
                   {errors.phoneVerificationCode && <span className="error-message">{errors.phoneVerificationCode}</span>}
