@@ -1,4 +1,4 @@
-name: CI test1
+name: CI test
 
 on:
   push:
