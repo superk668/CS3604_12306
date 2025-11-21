@@ -2,7 +2,11 @@ import type { Page } from '@playwright/test';
 
 export async function ensureLogin(page: Page, username = 'newuser', password = 'mypassword'): Promise<void> {
   await page.goto('/profile');
-  if (/\/profile$/.test(page.url())) return;
+  await page.waitForLoadState('networkidle').catch(() => {});
+  if (/\/profile$/.test(page.url())) {
+    await page.locator('.profile-page').first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+    return;
+  }
   const uiLogin = async () => {
     await page.goto('/');
     const loginBtn = page.getByRole('button', { name: '登录' });
@@ -17,6 +21,7 @@ export async function ensureLogin(page: Page, username = 'newuser', password = '
     } catch {}
   };
   await uiLogin();
+  await page.waitForLoadState('networkidle').catch(() => {});
   if (!/\/profile$/.test(page.url())) {
     const loginApi = await page.request.post('http://127.0.0.1:3000/api/v1/auth/login', {
       data: { username, password }
@@ -38,13 +43,15 @@ export async function ensureLogin(page: Page, username = 'newuser', password = '
     if (token) {
       await page.goto('/');
       await page.evaluate((t) => localStorage.setItem('authToken', t as string), token);
+      await page.reload();
       await page.goto('/profile');
-      try {
-        await page.waitForURL(/\/profile$/, { timeout: 5000 });
-      } catch {
-        await page.reload();
+      await page.waitForLoadState('networkidle').catch(() => {});
+      const ok = /\/profile$/.test(page.url());
+      if (!ok) {
         await page.goto('/profile');
+        await page.waitForLoadState('networkidle').catch(() => {});
       }
+      await page.locator('.profile-page').first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
     }
   }
 }

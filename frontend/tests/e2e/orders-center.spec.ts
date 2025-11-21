@@ -41,7 +41,7 @@ test.describe('订单中心列表', () => {
       }
     }
 
-    // 打开订单中心 → 火车票订单
+    await page.locator('.profile-page').first().waitFor({ state: 'visible', timeout: 20000 }).catch(() => {});
     await page.getByRole('button', { name: '火车票订单' }).click();
     // 切换“未出行订单”（已支付）
     await page.getByTestId('orders-tab-not-travelled').click();
