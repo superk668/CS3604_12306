@@ -28,6 +28,14 @@ test.describe('常用乘车人-查看', () => {
       if (reg.status() === 201) {
         const rj = await reg.json();
         token = rj.data?.token || null;
+      } else {
+        const relog = await page.request.post('http://127.0.0.1:3000/api/v1/auth/login', {
+          data: { username: 'newuser', password: 'mypassword' }
+        });
+        if (relog.status() === 200) {
+          const rlj = await relog.json();
+          token = rlj.data?.token || null;
+        }
       }
     }
     expect(token).toBeTruthy();

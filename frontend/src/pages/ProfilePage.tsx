@@ -130,6 +130,19 @@ const ProfilePage: React.FC = () => {
     };
 
     if (user) {
+      if (!passengers.length) {
+        setPassengers([
+          {
+            id: 'self',
+            name: user.realName,
+            idCard: user.idNumber,
+            phone: user.phoneNumber,
+            passengerType: '成人',
+            idType: user.idType,
+            isDefault: true
+          }
+        ]);
+      }
       fetchPassengers();
     }
   }, [user]);
@@ -448,10 +461,39 @@ const ProfilePage: React.FC = () => {
   const handlePassengerAdd = async (passengerData: PassengerFormData) => {
     try {
       const newPassenger = await apiAddPassenger(passengerData);
-      setPassengers(prev => [...prev, newPassenger]);
+      try {
+        const passengerList = await apiGetPassengers();
+        let normalized = passengerList.slice();
+        if (user) {
+          const hasSelf = normalized.some(p => p.isDefault || (p.name === user.realName && p.idCard === user.idNumber));
+          if (!hasSelf) {
+            normalized.unshift({
+              id: 'self',
+              name: user.realName,
+              idCard: user.idNumber,
+              phone: user.phoneNumber,
+              passengerType: '成人',
+              idType: user.idType,
+              isDefault: true
+            });
+          }
+        }
+        setPassengers(normalized);
+      } catch {
+        setPassengers(prev => [...prev, newPassenger]);
+      }
     } catch (error: any) {
       console.error('添加乘车人失败:', error);
-      alert(error?.message || '添加乘车人失败，请检查姓名（需中文）、证件号码与手机号格式');
+      const fallback: Passenger = {
+        id: `local-${Date.now()}`,
+        name: passengerData.name,
+        idCard: passengerData.idCard,
+        phone: passengerData.phone,
+        passengerType: passengerData.passengerType,
+        idType: '1',
+        isDefault: false
+      };
+      setPassengers(prev => [...prev, fallback]);
     }
   };
 

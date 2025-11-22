@@ -12,8 +12,8 @@ interface Passenger {
 interface AddPassengerModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (passenger: Omit<Passenger, 'id'>) => void;
-  onEdit?: (id: string, passenger: Omit<Passenger, 'id'>) => void;
+  onAdd: (passenger: Omit<Passenger, 'id'>) => void | Promise<void>;
+  onEdit?: (id: string, passenger: Omit<Passenger, 'id'>) => void | Promise<void>;
   editingPassenger?: Passenger | null;
 }
 
@@ -70,7 +70,7 @@ const AddPassengerModal: React.FC<AddPassengerModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
       const submitData = {
@@ -80,11 +80,10 @@ const AddPassengerModal: React.FC<AddPassengerModalProps> = ({
         passengerType: formData.passengerType,
         idType: formData.idType || '1'
       };
-      
       if (editingPassenger && onEdit) {
-        onEdit(editingPassenger.id, submitData);
+        await Promise.resolve(onEdit(editingPassenger.id, submitData));
       } else {
-        onAdd(submitData);
+        await Promise.resolve(onAdd(submitData));
       }
       setFormData({ name: '', idCard: '', phone: '', countryCode: '+86', passengerType: '成人', idType: '1' });
       setErrors({});
