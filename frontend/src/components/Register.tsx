@@ -168,6 +168,9 @@ const Register: React.FC<RegisterProps> = () => {
       } else if (pwd !== cpwd) {
         newErrors.confirmPassword = '确认密码与密码不同！';
       }
+      if (!formData.agreementAccepted) {
+        newErrors.agreementAccepted = '请确定服务条款!';
+      }
     }
     if (currentStep === 2) {
       if (!verificationCodeSent) {
@@ -183,6 +186,11 @@ const Register: React.FC<RegisterProps> = () => {
 
   // 下一步
   const handleNextStep = () => {
+    if (currentStep === 1 && !formData.agreementAccepted) {
+      alert('请确定服务条款!');
+      setErrors(prev => ({ ...prev, agreementAccepted: '请确定服务条款!' }));
+      return;
+    }
     if (validateCurrentStep()) {
       setCurrentStep(prev => prev + 1);
     }
