@@ -174,5 +174,5 @@ jobs:
           DB_USER: root
           DB_PASS: root
           DB_NAME: trae_12306
-        run: npm test -- --runInBand
+        run: npm run test:mysql
         working-directory: backend
