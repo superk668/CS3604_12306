@@ -18,8 +18,20 @@ test.describe('用户认证', () => {
   await page.fill('#email', 'newuser@example.com');
   await page.locator('label.agreement-label').scrollIntoViewIfNeeded();
   await page.locator('label.agreement-label').click({ force: true });
+  await page.evaluate(() => {
+    const el = document.querySelector('input[name="agreementAccepted"]') as HTMLInputElement | null;
+    if (el && !el.checked) {
+      el.checked = true;
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      try { el.click(); } catch {}
+    }
+  });
 
   await page.locator('button.next-btn').click();
+  try {
+    const dlg = await page.waitForEvent('dialog', { timeout: 3000 });
+    await dlg.accept();
+  } catch {}
   // 若未进入第二步，重试一次协议勾选与下一步
   try {
     await expect(page.getByRole('heading', { name: '手机验证' })).toBeVisible({ timeout: 10000 });

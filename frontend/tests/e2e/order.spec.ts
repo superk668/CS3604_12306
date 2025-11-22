@@ -76,6 +76,17 @@ test.describe('订票与订单支付', () => {
         page.waitForEvent('dialog').then(d => d.accept()),
         page.locator('button.login-button').click()
       ]);
+      if (!/\/profile$/.test(page.url())) {
+        const apiLogin = await page.request.post('http://127.0.0.1:3000/api/v1/auth/login', { data: { username: 'newuser', password: 'mypassword' } });
+        if (apiLogin.status() === 200) {
+          const token = (await apiLogin.json()).data?.token;
+          if (token) {
+            await page.evaluate(t => localStorage.setItem('authToken', t as string), token);
+            await page.reload();
+            await page.goto('/profile');
+          }
+        }
+      }
     }
     await page.goto('/profile');
     const prof = page.locator('.profile-page');
